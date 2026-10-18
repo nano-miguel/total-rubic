@@ -118,7 +118,7 @@ void CustCfg::saveToFile(const std::string& filename) {
 }
 
 // ============================================
-// AlignBuf — wipe SIEMPRE en destructor
+// AlignBuf
 // ============================================
 
 AlignBuf::AlignBuf(size_t size) : data_ptr(nullptr), size_bytes(size) {
@@ -156,10 +156,6 @@ AlignBuf& AlignBuf::operator=(AlignBuf&& other) noexcept {
 uint8_t* AlignBuf::data() { return static_cast<uint8_t*>(data_ptr); }
 const uint8_t* AlignBuf::data() const { return static_cast<const uint8_t*>(data_ptr); }
 size_t AlignBuf::size() const { return size_bytes; }
-
-// NOTA: DevDetect vive en devdetect.cpp
-// NOTA: KeyDeriv, KMACProc y HdrBackup viven en unit_header.cpp
-// NOTA: SIMDProc y AESXTSProc viven en unit_pipeline.cpp
 
 // ============================================
 // FixedThCfg
@@ -676,7 +672,6 @@ bool UnitEncryptor::doProcess(const StorUnit& unit, const Botan::secure_vector<u
             close(fd);
             return false;
         }
-        // Fix de seguridad: el backup se cifra con master_key
         if (backup_mgr.saveHeader(unit.device_path, hdr, master_key))
             log(LogLevel::Success, LogEvent::BackupSaved, "");
         else
@@ -695,7 +690,6 @@ bool UnitEncryptor::doProcess(const StorUnit& unit, const Botan::secure_vector<u
         log(LogLevel::Info, LogEvent::HeaderVerified, "reading");
         if (!readHeaderFromDevice(fd, hdr)) {
             log(LogLevel::Warning, LogEvent::HeaderReadFailed, "intentando backup");
-            // Fix de seguridad: el backup se descifra con master_key
             if (backup_mgr.loadHeader(unit.device_path, hdr, master_key))
                 log(LogLevel::Success, LogEvent::BackupLoaded, "");
             else {
@@ -788,7 +782,6 @@ bool UnitEncryptor::doProcess(const StorUnit& unit, const Botan::secure_vector<u
         });
     }
 
-    // Cota defensiva del reorder buffer: ncpu workers + 2 colas de 2 + writer hand
     const size_t kMaxReorder = static_cast<size_t>(ncpu) * 4 + 64;
 
     std::thread writer([&]() {
@@ -888,7 +881,6 @@ bool UnitEncryptor::cleanHeader(const StorUnit& unit) {
 bool UnitEncryptor::restoreHeader(const StorUnit& unit, const Botan::secure_vector<uint8_t>& master_key) {
     log(LogLevel::Info, LogEvent::HeaderRestoring, "");
     EncUnitHdr hdr;
-    // Fix de seguridad: el backup se descifra con master_key
     if (!backup_mgr.loadHeader(unit.device_path, hdr, master_key)) {
         log(LogLevel::Error, LogEvent::BackupLoadFailed, "");
         return false;
