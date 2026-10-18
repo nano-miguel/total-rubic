@@ -1,4 +1,7 @@
 // ui/unit_encryptor_ui.h - 0.1 alpha
+// Toda la UI de UnitEncryptor: menús, prompts, lectura de teclado.
+// La lógica vive en cipher/unit_encryptor.h
+
 #ifndef UI_UNIT_ENCRYPTOR_UI_H
 #define UI_UNIT_ENCRYPTOR_UI_H
 
@@ -48,6 +51,119 @@
 #define BRIGHT_WHITE "\033[97m"
 #endif
 
+//**************************************
+// BARRA DE PROGRESO
+
+class ProgBar {
+  private:
+    int width;
+    std::string prefix;
+    std::string suffix;
+    std::chrono::steady_clock::time_point start_time;
+    uint64_t total_bytes;
+    uint64_t current_bytes;
+    double last_speed;
+
+  public:
+    ProgBar(int bar_width = 50, const std::string& pre = "", const std::string& suf = "")
+        : width(bar_width), prefix(pre), suffix(suf), total_bytes(0), current_bytes(0), last_speed(0) {
+        start_time = std::chrono::steady_clock::now();
+    }
+
+    void setTotal(uint64_t total) {
+        total_bytes = total;
+    }
+
+    void update(uint64_t current) {
+        current_bytes = current;
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
+        if (elapsed > 0)
+            last_speed = (current_bytes / 1048576.0) / (elapsed / 1000.0);
+        render();
+    }
+
+    void render() {
+        if (total_bytes == 0)
+            return;
+        double progress = (double)current_bytes / total_bytes;
+        int pos = (int)(width * progress);
+        double gb_done = current_bytes / (double)(1024ULL * 1024ULL * 1024ULL);
+        double gb_total = total_bytes / (double)(1024ULL * 1024ULL * 1024ULL);
+        int percent = (int)(progress * 100);
+
+        auto now = std::chrono::steady_clock::now();
+        std::string eta = "calculating";
+        if (last_speed > 0 && current_bytes > 0) {
+            uint64_t remaining_bytes = total_bytes - current_bytes;
+            double remaining_secs = remaining_bytes / (last_speed * 1048576.0);
+            if (remaining_secs < 3600) {
+                int minutes = (int)remaining_secs / 60;
+                int seconds = (int)remaining_secs % 60;
+                std::stringstream ss;
+                ss << minutes << "m " << seconds << "s";
+                eta = ss.str();
+            } else {
+                int hours = (int)remaining_secs / 3600;
+                int minutes = ((int)remaining_secs % 3600) / 60;
+                std::stringstream ss;
+                ss << hours << "h " << minutes << "m";
+                eta = ss.str();
+            }
+        }
+
+        std::cout << "\r" << prefix << " " << BLUE << "[" << RESET;
+        for (int i = 0; i < width; ++i) {
+            if (i < pos)
+                std::cout << GREEN << "█" << RESET;
+            else if (i == pos)
+                std::cout << BLUE << "█" << RESET;
+            else
+                std::cout << "░";
+        }
+        std::cout << BLUE << "]" << RESET;
+        std::cout << " " << GREEN << std::setw(3) << percent << "%" << RESET;
+        std::cout << " " << BLUE << std::fixed << std::setprecision(2) << gb_done << "/" << gb_total << " GB" << RESET;
+        std::cout << " " << GREEN << std::fixed << std::setprecision(2) << last_speed << " MB/s" << RESET;
+        std::cout << " " << BLUE << "ETA: " << eta << RESET;
+        std::cout << suffix;
+        std::cout.flush();
+    }
+
+    void finish() {
+        std::cout << std::endl;
+    }
+};
+
+// ============================================
+// FORMATEADOR
+// ============================================
+class FormatterUI {
+  public:
+    static bool cleanHeader(UnitEncryptor& core, const StorUnit& unit) {
+        return core.cleanHeader(unit);
+    }
+
+    static bool quickFormat(UnitEncryptor& core, const StorUnit& unit, const std::string& fstype) {
+        std::cout << YELLOW << "\n" << TR().t("unit_format_quick_warn") << RESET << std::endl;
+        std::cout << TR().t("unit_format_quick_unit") << unit.device_path << std::endl;
+        std::cout << TR().t("unit_format_quick_size") << unit.getSizeStr() << std::endl;
+        std::cout << TR().t("unit_format_quick_type") << fstype << std::endl;
+        std::cout << "\n" << TR().t("unit_format_quick_confirm") << " ";
+        std::string confirm;
+        std::getline(std::cin, confirm);
+        if (confirm != TR().t("unit_format_quick_keyword")) {
+            std::cout << TR().t("unit_format_quick_cancelled") << std::endl;
+            return false;
+        }
+        std::cout << YELLOW << TR().t("unit_format_quick_formatting") << RESET << std::endl;
+        return core.formatUnit(unit, fstype);
+    }
+};
+
+// ============================================
+// CLASE PRINCIPAL
+// ============================================
 class UnitEncryptorUI {
   private:
     UnitEncryptor& core_;
@@ -92,17 +208,26 @@ class UnitEncryptorUI {
         std::cout << prompt;
         std::string input;
         if (!std::getline(std::cin, input)) {
-            exit(0); 
+            exit(0); // Salir limpiamente si se cierra el stdin (Ctrl+D)
         }
         return input;
     }
 
+    void waitForEnter() {
+        std::cout << "\n" << YELLOW << TR().t("press_enter") << RESET;
+        std::string dummy;
+        if (!std::getline(std::cin, dummy))
+            exit(0);
+    }
+
+    // Línea de menú con padding real
     void menu_line(const std::string& marker, const std::string& label) {
         std::string plain = " " + marker + " " + label;
         std::cout << BLUE << "│" << GREEN << " " << marker << " " << MAGENTA << label << pad_to(plain, 68) << BLUE
                   << "│" << RESET << "\n";
     }
 
+    // Traducción de eventos del core
     void onCoreLog(LogLevel level, LogEvent event, const std::string& data) {
         (void)level;
         switch (event) {
@@ -366,7 +491,6 @@ class UnitEncryptorUI {
 
     void showConfigMenu() {
         while (true) {
-            // ACCESO LIMPIO A LA CONFIGURACIÓN
             UnitSettings& settings = core_.getSettings();
             CustCfg& custom = settings.getCustom();
             const FixedThCfg& fixed = settings.getFixed();
@@ -468,11 +592,11 @@ class UnitEncryptorUI {
                     custom.custom_mode = (input == "s" || input == "S");
                 std::cout << BLUE << "└─────────────────────────────────────────────────────────────────────┘" << RESET
                           << std::endl;
-                settings.save(); // <-- NUEVA FORMA DE GUARDAR
+                settings.save();
                 std::cout << GREEN << "\n" << TR().t("unit_config_saved") << RESET << std::endl;
             } else if (c == "2") {
-                settings.setCustomMode(!settings.isCustomMode()); // <-- NUEVA FORMA DE TOGGLEAR
-                settings.save(); // <-- NUEVA FORMA DE GUARDAR
+                settings.setCustomMode(!settings.isCustomMode());
+                settings.save();
                 std::cout << GREEN << "\n"
                           << (settings.isCustomMode() ? TR().t("unit_config_mode_on") : TR().t("unit_config_mode_off")) << RESET
                           << std::endl;
@@ -633,6 +757,164 @@ class UnitEncryptorUI {
 
     ~UnitEncryptorUI() {
         instance = nullptr;
+    }
+
+    static int tryRunAsWorker(int argc, char* argv[]) {
+        if (argc < 4)
+            return -1;
+        if (std::string(argv[1]) != "--unit-op")
+            return -1;
+
+        if (geteuid() != 0) {
+            std::cerr << "✗ --unit-op requiere root\n";
+            return 1;
+        }
+
+        std::string device = argv[2];
+        std::string action = argv[3];
+
+        if (device.rfind("/dev/", 0) != 0) {
+            std::cerr << "✗ Dispositivo inválido\n";
+            return 1;
+        }
+        bool encrypt;
+        if (action == "encrypt")
+            encrypt = true;
+        else if (action == "decrypt")
+            encrypt = false;
+        else {
+            std::cerr << "✗ Acción inválida\n";
+            return 1;
+        }
+
+        uint32_t key_len = 0;
+        ssize_t r = read(3, &key_len, sizeof(key_len));
+        if (r != (ssize_t)sizeof(key_len) || key_len == 0 || key_len > 128) {
+            std::cerr << "✗ No se pudo leer la master key del pipe\n";
+            return 1;
+        }
+        Botan::secure_vector<uint8_t> master_key(key_len);
+        r = read(3, master_key.data(), key_len);
+        if (r != (ssize_t)key_len) {
+            std::cerr << "✗ Lectura incompleta de la master key\n";
+            return 1;
+        }
+        close(3);
+
+        StorUnit u;
+        u.device_path = device;
+        u.is_encrypted = !encrypt;
+        u.is_mounted = false;
+        u.is_system_disk = false;
+
+        UnitEncryptor enc;
+
+        enc.setLogCallback([](LogLevel level, LogEvent event, const std::string& data) {
+            std::string prefix;
+            switch (level) {
+            case LogLevel::Error:
+                prefix = RED "  ! " RESET;
+                break;
+            case LogLevel::Warning:
+                prefix = YELLOW "  ~ " RESET;
+                break;
+            case LogLevel::Success:
+                prefix = GREEN "  + " RESET;
+                break;
+            default:
+                prefix = "  · ";
+                break;
+            }
+            std::cout << prefix;
+            switch (event) {
+            case LogEvent::HeaderWritten:
+                std::cout << "Header escrito";
+                break;
+            case LogEvent::HeaderVerified:
+                std::cout << "Header verificado";
+                break;
+            case LogEvent::BackupSaved:
+                std::cout << "Backup guardado";
+                break;
+            case LogEvent::SaltGenerating:
+                std::cout << "Generando salt KDF";
+                break;
+            case LogEvent::KeyDerived:
+                std::cout << "Clave derivada";
+                break;
+            case LogEvent::DeviceTypeDetected:
+                std::cout << "Tipo: " << data;
+                break;
+            case LogEvent::ChunkCountInfo:
+                std::cout << "Procesando " << data << " chunks";
+                break;
+            case LogEvent::ProcessingComplete:
+                std::cout << "Completado";
+                break;
+            case LogEvent::ProcessingFailed:
+                std::cout << "Falló";
+                break;
+            default:
+                std::cout << data;
+                break;
+            }
+            if (!data.empty() && event != LogEvent::DeviceTypeDetected && event != LogEvent::ChunkCountInfo) {
+                std::cout << ": " << data;
+            }
+            std::cout << '\n';
+        });
+
+        bool ok = enc.processUnit(u, encrypt, master_key);
+
+        std::cout << (ok ? GREEN "  OK\n" RESET : RED "  FAIL\n" RESET);
+        return ok ? 0 : 1;
+    }
+
+    void showFormatMenu(StorUnit& unit) {
+        std::cout << BLUE << "\n┌─[" << MAGENTA << TR().t("unit_format_title") << BLUE
+                  << "]────────────────────────────────────────┐\n";
+        if (unit.is_encrypted) {
+            std::cout << BLUE << "│ " << YELLOW << TR().t("unit_format_warn_encrypted") << RESET << std::endl;
+            menu_line("[1]", TR().t("unit_format_clean"));
+        }
+        std::cout << BLUE << "│ " << RESET << "\n";
+        std::cout << BLUE << "│ " << MAGENTA << TR().t("unit_format_fs_title") << RESET << std::endl;
+        menu_line("[2]", TR().t("unit_format_fat32"));
+        menu_line("[3]", TR().t("unit_format_ntfs"));
+        menu_line("[4]", TR().t("unit_format_ext4"));
+        menu_line("[5]", TR().t("unit_format_exfat"));
+        menu_line("[0]", TR().t("unit_format_cancel"));
+        std::cout << BLUE << "└─────────────────────────────────────────────────────────────────────┘" << RESET << "\n";
+        std::cout << BRIGHT_GREEN << "\n" << TR().t("unit_format_prompt") << " " << RESET;
+        std::string c;
+        std::getline(std::cin, c);
+        if (c == "0")
+            return;
+        if (c == "1" && unit.is_encrypted) {
+            if (FormatterUI::cleanHeader(core_, unit)) {
+                unit.is_encrypted = false;
+                unit.has_header_backup = false;
+                std::cout << GREEN << "\n" << TR().t("unit_format_clean_ok") << RESET << std::endl;
+            }
+            return;
+        }
+        std::string fstype;
+        if (c == "2")
+            fstype = "vfat";
+        else if (c == "3")
+            fstype = "ntfs";
+        else if (c == "4")
+            fstype = "ext4";
+        else if (c == "5")
+            fstype = "exfat";
+        else
+            return;
+        if (FormatterUI::quickFormat(core_, unit, fstype)) {
+            unit.is_encrypted = false;
+            unit.has_header_backup = false;
+            unit.filesystem = fstype;
+            std::cout << GREEN << "\n" << TR().t("unit_format_ok") << RESET << std::endl;
+        }
     }
 
     void unitMenu(StorUnit& u) {
