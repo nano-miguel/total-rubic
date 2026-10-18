@@ -118,7 +118,7 @@ void CustCfg::saveToFile(const std::string& filename) {
 }
 
 // ============================================
-// AlignBuf — wipe SIEMPRE en destructor
+// AlignBuf
 // ============================================
 
 AlignBuf::AlignBuf(size_t size) : data_ptr(nullptr), size_bytes(size) {
@@ -156,10 +156,6 @@ AlignBuf& AlignBuf::operator=(AlignBuf&& other) noexcept {
 uint8_t* AlignBuf::data() { return static_cast<uint8_t*>(data_ptr); }
 const uint8_t* AlignBuf::data() const { return static_cast<const uint8_t*>(data_ptr); }
 size_t AlignBuf::size() const { return size_bytes; }
-
-// NOTA: DevDetect vive en devdetect.cpp
-// NOTA: KeyDeriv, KMACProc y HdrBackup viven en unit_header.cpp
-// NOTA: SIMDProc y AESXTSProc viven en unit_pipeline.cpp
 
 // ============================================
 // FixedThCfg
@@ -267,6 +263,287 @@ std::string StorUnit::getSafeFSType() const {
         if (!isprint(fs_info.fstype[i])) return "";
     return std::string(fs_info.fstype);
 }
+
+// ============================================================
+// NUEVA ARQUITECTURA: Clases de soporte para "Hacer una sola cosa"
+// ============================================================
+
+namespace {
+
+// ------------------------------------------------------------
+// DataPipeline: Encapsula toda la orquestación de hilos y colas
+// ------------------------------------------------------------
+class DataPipeline {
+public:
+    struct Context {
+        int fd;
+        uint64_t total_size;
+        uint64_t data_start_sector;
+        const ThCfg& cfg;
+        DevType device_type;
+        const Botan::secure_vector<uint8_t>& xts_key;
+        bool encrypt;
+        SpeedMtr& speed_meter;
+        std::atomic<bool>& stop_requested;
+        std::function<void(LogLevel, LogEvent, const std::string&)> log;
+        std::function<void(uint64_t, uint64_t, double)> progress;
+    };
+
+    explicit DataPipeline(Context ctx) : ctx_(ctx) {}
+
+    bool run() {
+        size_t chunk_size = ctx_.cfg.getChunkSize();
+        uint64_t total_chunks = (ctx_.total_size + chunk_size - 1) / chunk_size;
+        
+        ctx_.log(LogLevel::Info, LogEvent::DataSizeInfo, std::to_string(ctx_.total_size));
+        ctx_.log(LogLevel::Info, LogEvent::ChunkCountInfo, std::to_string(total_chunks));
+
+        LimQueue<PipeChunk> read_q(MAX_QUEUE_SIZE), write_q(MAX_QUEUE_SIZE);
+        std::atomic<uint64_t> done{0}, bytes_done{0};
+        std::atomic<bool> err{false};
+
+        auto reader = spawn_reader(read_q, chunk_size, total_chunks, err);
+        auto workers = spawn_workers(read_q, write_q, chunk_size, err);
+        auto writer = spawn_writer(write_q, chunk_size, total_chunks, done, bytes_done, err);
+
+        // Bucle principal de monitoreo
+        while (!err && !ctx_.stop_requested && done < total_chunks) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(PROGRESS_UPDATE_MS));
+        }
+
+        // Apagar todo limpiamente
+        read_q.close();
+        write_q.close();
+        if (reader.joinable()) reader.join();
+        for (auto& t : workers) if (t.joinable()) t.join();
+        if (writer.joinable()) writer.join();
+        
+        fsync(ctx_.fd);
+
+        if (err) ctx_.log(LogLevel::Error, LogEvent::ProcessingFailed, "");
+        else if (ctx_.stop_requested) ctx_.log(LogLevel::Warning, LogEvent::ProcessingStopped, "");
+        else ctx_.log(LogLevel::Success, LogEvent::ProcessingComplete, "");
+
+        return !err && done == total_chunks && !ctx_.stop_requested;
+    }
+
+private:
+    Context ctx_;
+
+    std::thread spawn_reader(LimQueue<PipeChunk>& read_q, size_t chunk_size, uint64_t total_chunks, std::atomic<bool>& err) {
+        bool scrub = !ctx_.encrypt;
+        return std::thread([this, &read_q, chunk_size, total_chunks, &err, scrub]() {
+            for (uint64_t c = 0; c < total_chunks && !err && !ctx_.stop_requested; c++) {
+                PipeChunk chunk(chunk_size, ctx_.cfg.use_direct_io);
+                chunk.data->set_scrub_on_destroy(scrub);
+                chunk.index = c;
+                chunk.offset = ctx_.data_start_sector * SECTOR_SIZE + c * chunk_size;
+                chunk.size = std::min<uint64_t>(chunk_size, ctx_.total_size - chunk.offset);
+                chunk.start_sector = chunk.offset / SECTOR_SIZE;
+                if (pread(ctx_.fd, chunk.data->data(), chunk.size, chunk.offset) != (ssize_t)chunk.size) {
+                    ctx_.log(LogLevel::Error, LogEvent::ChunkReadError, std::to_string(c));
+                    err = true;
+                    break;
+                }
+                read_q.push(std::move(chunk));
+            }
+            read_q.close();
+        });
+    }
+
+    std::vector<std::thread> spawn_workers(LimQueue<PipeChunk>& read_q, LimQueue<PipeChunk>& write_q, size_t chunk_size, std::atomic<bool>& err) {
+        int ncpu = ctx_.cfg.num_threads > 0 ? ctx_.cfg.num_threads : 4;
+        std::vector<std::thread> workers;
+        workers.reserve(ncpu);
+        for (int t = 0; t < ncpu; t++) {
+            workers.emplace_back([this, &read_q, &write_q, chunk_size, &err]() {
+                AESXTSProc proc(ctx_.xts_key, ctx_.encrypt);
+                if (!proc.used_avx512())
+                    ctx_.log(LogLevel::Warning, LogEvent::XtsFallback, "Botan XTS (AVX-512 self-test failed)");
+                PipeChunk chunk(chunk_size, ctx_.cfg.use_direct_io);
+                while (read_q.pop(chunk) && !err && !ctx_.stop_requested) {
+                    if (!proc.processBuffer(chunk.data->data(), chunk.size, chunk.start_sector)) {
+                        ctx_.log(LogLevel::Error, LogEvent::ChunkProcessError, std::to_string(chunk.index));
+                        err = true;
+                        break;
+                    }
+                    write_q.push(std::move(chunk));
+                    chunk = PipeChunk(chunk_size, ctx_.cfg.use_direct_io);
+                }
+            });
+        }
+        return workers;
+    }
+
+    std::thread spawn_writer(LimQueue<PipeChunk>& write_q, size_t chunk_size, uint64_t total_chunks, std::atomic<uint64_t>& done, std::atomic<uint64_t>& bytes_done, std::atomic<bool>& err) {
+        const size_t kMaxReorder = static_cast<size_t>(ctx_.cfg.num_threads) * 4 + 64;
+        return std::thread([this, &write_q, chunk_size, total_chunks, &done, &bytes_done, &err, kMaxReorder]() {
+            PipeChunk chunk(chunk_size, ctx_.cfg.use_direct_io);
+            uint64_t expected = 0;
+            std::vector<PipeChunk> reorder;
+            while (!err && !ctx_.stop_requested && expected < total_chunks) {
+                if (!write_q.pop(chunk)) break;
+                if (chunk.index == expected) {
+                    if (pwrite(ctx_.fd, chunk.data->data(), chunk.size, chunk.offset) != (ssize_t)chunk.size) {
+                        ctx_.log(LogLevel::Error, LogEvent::ChunkWriteError, std::to_string(chunk.index));
+                        err = true;
+                        break;
+                    }
+                    done++;
+                    bytes_done += chunk.size;
+                    ctx_.speed_meter.addBytes(chunk.size);
+                    ctx_.progress(bytes_done.load(), ctx_.total_size, ctx_.speed_meter.getCurrentSpeed());
+                    expected++;
+                    
+                    int flush = (ctx_.device_type == DevType::HDD || ctx_.device_type == DevType::USB2) ? 2 : 1;
+                    if (chunk.index % flush == 0) fsync(ctx_.fd);
+
+                    for (auto it = reorder.begin(); it != reorder.end(); ) {
+                        if (it->index == expected) {
+                            if (pwrite(ctx_.fd, it->data->data(), it->size, it->offset) != (ssize_t)it->size) {
+                                ctx_.log(LogLevel::Error, LogEvent::ChunkWriteError, std::to_string(it->index));
+                                err = true;
+                                break;
+                            }
+                            done++;
+                            bytes_done += it->size;
+                            ctx_.speed_meter.addBytes(it->size);
+                            ctx_.progress(bytes_done.load(), ctx_.total_size, ctx_.speed_meter.getCurrentSpeed());
+                            expected++;
+                            it = reorder.erase(it);
+                        } else ++it;
+                    }
+                } else if (chunk.index > expected) {
+                    if (reorder.size() >= kMaxReorder) {
+                        ctx_.log(LogLevel::Error, LogEvent::ChunkWriteError, "reorder overflow");
+                        err = true;
+                        break;
+                    }
+                    reorder.push_back(std::move(chunk));
+                    chunk = PipeChunk(chunk_size, ctx_.cfg.use_direct_io);
+                }
+            }
+            write_q.close();
+        });
+    }
+};
+
+// ------------------------------------------------------------
+// HeaderProcessor: Encapsula la creación/verificación del Header
+// ------------------------------------------------------------
+class HeaderProcessor {
+public:
+    static bool prepare_for_encrypt(
+        int fd, const StorUnit& unit, const Botan::secure_vector<uint8_t>& master_key,
+        uint64_t data_start_sector, uint64_t total_sectors, HdrBackup& backup_mgr,
+        Botan::secure_vector<uint8_t>& xts_key, FSInfo& fs_info,
+        std::function<void(LogLevel, LogEvent, const std::string&)> log)
+    {
+        log(LogLevel::Info, LogEvent::SaltGenerating, "");
+        auto kdf_salt = KeyDeriv::generateSalt(KDF_SALT_SIZE);
+        if (kdf_salt.empty()) { log(LogLevel::Error, LogEvent::SaltError, ""); return false; }
+
+        log(LogLevel::Info, LogEvent::KeyDeriving, "");
+        xts_key = KeyDeriv::deriveSubKey(master_key, kdf_salt, 64);
+        if (xts_key.empty()) { log(LogLevel::Error, LogEvent::KeyDeriveError, ""); return false; }
+        log(LogLevel::Success, LogEvent::KeyDerived, "");
+
+        EncUnitHdr hdr{};
+        memcpy(hdr.kdf_salt, kdf_salt.data(), KDF_SALT_SIZE);
+        hdr.version = HEADER_VERSION_CURRENT;
+        hdr.data_start_sector = data_start_sector;
+        hdr.total_sectors = total_sectors;
+        hdr.fs_info = fs_info;
+
+        log(LogLevel::Info, LogEvent::KmacCalculating, "");
+        try {
+            KMACProc Kmac(master_key);
+            auto m = Kmac.calculate(reinterpret_cast<uint8_t*>(&hdr), offsetof(EncUnitHdr, Kmac));
+            if (m.size() == KMAC_SIZE) memcpy(hdr.Kmac, m.data(), KMAC_SIZE);
+            else { log(LogLevel::Error, LogEvent::KmacError, "size"); return false; }
+        } catch (const std::exception& e) {
+            log(LogLevel::Error, LogEvent::KmacError, e.what());
+            return false;
+        }
+
+        if (backup_mgr.saveHeader(unit.device_path, hdr, master_key))
+            log(LogLevel::Success, LogEvent::BackupSaved, "");
+        else
+            log(LogLevel::Warning, LogEvent::BackupSaveFailed, "");
+
+        log(LogLevel::Info, LogEvent::HeaderWriting, "");
+        int flags = fcntl(fd, F_GETFL);
+        if (flags == -1) return false;
+        bool direct = flags & O_DIRECT;
+        if (direct) fcntl(fd, F_SETFL, flags & ~O_DIRECT);
+        ssize_t w = pwrite(fd, &hdr, sizeof(hdr), HEADER_OFFSET_SECTORS * SECTOR_SIZE);
+        if (direct) fcntl(fd, F_SETFL, flags);
+        
+        if (w != sizeof(hdr)) {
+            log(LogLevel::Error, LogEvent::HeaderWriting, strerror(errno));
+            return false;
+        }
+        fsync(fd);
+        log(LogLevel::Success, LogEvent::HeaderWritten, "");
+        return true;
+    }
+
+    static bool prepare_for_decrypt(
+        int fd, const StorUnit& unit, const Botan::secure_vector<uint8_t>& master_key,
+        HdrBackup& backup_mgr, Botan::secure_vector<uint8_t>& xts_key,
+        uint64_t& data_start_sector, FSInfo& fs_info,
+        std::function<void(LogLevel, LogEvent, const std::string&)> log)
+    {
+        EncUnitHdr hdr;
+        log(LogLevel::Info, LogEvent::HeaderVerified, "reading");
+        ssize_t r = pread(fd, &hdr, sizeof(hdr), HEADER_OFFSET_SECTORS * SECTOR_SIZE);
+        bool valid_header = (r == sizeof(hdr) && hdr.isValid());
+
+        if (!valid_header) {
+            log(LogLevel::Warning, LogEvent::HeaderReadFailed, "intentando backup");
+            if (backup_mgr.loadHeader(unit.device_path, hdr, master_key))
+                log(LogLevel::Success, LogEvent::BackupLoaded, "");
+            else {
+                log(LogLevel::Error, LogEvent::BackupLoadFailed, "");
+                return false;
+            }
+        }
+
+        if (hdr.version < 2) {
+            log(LogLevel::Warning, LogEvent::KeyDerived, "version<2 sin KDF");
+            xts_key.resize(64);
+            memcpy(xts_key.data(), master_key.data(), 32);
+            memcpy(xts_key.data() + 32, master_key.data(), 32);
+        } else {
+            log(LogLevel::Info, LogEvent::KeyDeriving, "");
+            Botan::secure_vector<uint8_t> kdf_salt(KDF_SALT_SIZE);
+            memcpy(kdf_salt.data(), hdr.kdf_salt, KDF_SALT_SIZE);
+            xts_key = KeyDeriv::deriveSubKey(master_key, kdf_salt, 64);
+            if (xts_key.empty()) { log(LogLevel::Error, LogEvent::KeyDeriveError, ""); return false; }
+            log(LogLevel::Success, LogEvent::KeyDerived, "");
+        }
+
+        log(LogLevel::Info, LogEvent::KmacCalculating, "verificando");
+        try {
+            KMACProc Kmac(master_key);
+            if (!Kmac.verify(reinterpret_cast<uint8_t*>(&hdr), offsetof(EncUnitHdr, Kmac), hdr.Kmac, KMAC_SIZE)) {
+                log(LogLevel::Error, LogEvent::KmacFailed, "");
+                return false;
+            }
+        } catch (const std::exception& e) {
+            log(LogLevel::Error, LogEvent::KmacError, e.what());
+            return false;
+        }
+        log(LogLevel::Success, LogEvent::KmacVerified, "");
+
+        fs_info = hdr.fs_info;
+        data_start_sector = hdr.data_start_sector;
+        return true;
+    }
+};
+
+} // anonymous namespace
+
 
 // ============================================
 // UnitEncryptor
@@ -608,19 +885,22 @@ bool UnitEncryptor::processUnit(StorUnit& unit, bool encrypt,
     return ok;
 }
 
+// ============================================================
+// doProcess: La Regla del Descenso de Clean Code en acción
+// ============================================================
 bool UnitEncryptor::doProcess(const StorUnit& unit, const Botan::secure_vector<uint8_t>& master_key, bool encrypt) {
+    // 1. Configurar los parámetros de hardware
     ThCfg cfg;
     if (use_custom_config && custom_config.custom_mode) cfg.applyCustomConfig(custom_config);
     else cfg.applyFixedConfig(fixed_config, unit.device_type);
     cfg.validate();
 
     log(LogLevel::Info, LogEvent::DeviceTypeDetected, unit.getDevTypeStr());
-    log(LogLevel::Info,
-        (use_custom_config && custom_config.custom_mode) ? LogEvent::ConfigCustom : LogEvent::ConfigAuto,
-        std::to_string(cfg.num_threads) + " threads");
+    log(LogLevel::Info, (use_custom_config && custom_config.custom_mode) ? LogEvent::ConfigCustom : LogEvent::ConfigAuto, std::to_string(cfg.num_threads) + " threads");
     log(LogLevel::Info, LogEvent::ChunkSizeInfo, std::to_string(cfg.chunk_size_mb));
     log(LogLevel::Info, LogEvent::IoModeInfo, cfg.use_direct_io ? "direct" : "normal");
 
+    // 2. Abrir el dispositivo
     int flags = O_RDWR | O_SYNC;
     if (cfg.use_direct_io) flags |= O_DIRECT;
     int fd = open(unit.device_path.c_str(), flags);
@@ -635,220 +915,57 @@ bool UnitEncryptor::doProcess(const StorUnit& unit, const Botan::secure_vector<u
         } else return false;
     }
 
+    // 3. Obtener tamaño del dispositivo
     uint64_t total_size = 0;
     if (ioctl(fd, BLKGETSIZE64, &total_size) < 0) {
         log(LogLevel::Error, LogEvent::DeviceSizeFailed, strerror(errno));
         close(fd);
         return false;
     }
+
     uint64_t total_sectors = total_size / SECTOR_SIZE;
     uint64_t data_start_sector = DATA_OFFSET_SECTORS;
-    uint64_t data_size = (total_sectors - data_start_sector) * SECTOR_SIZE;
-
-    Botan::secure_vector<uint8_t> kdf_salt, xts_key;
+    Botan::secure_vector<uint8_t> xts_key;
     FSInfo fs_info = unit.fs_info;
 
+    // 4. Procesar el Header (Delegado a HeaderProcessor)
+    auto log_cb = [this](LogLevel l, LogEvent e, const std::string& d) { this->log(l, e, d); };
+    
+    bool header_ok = false;
     if (encrypt) {
-        log(LogLevel::Info, LogEvent::SaltGenerating, "");
-        kdf_salt = KeyDeriv::generateSalt(KDF_SALT_SIZE);
-        if (kdf_salt.empty()) { log(LogLevel::Error, LogEvent::SaltError, ""); close(fd); return false; }
-        log(LogLevel::Info, LogEvent::KeyDeriving, "");
-        xts_key = KeyDeriv::deriveSubKey(master_key, kdf_salt, 64);
-        if (xts_key.empty()) { log(LogLevel::Error, LogEvent::KeyDeriveError, ""); close(fd); return false; }
-        log(LogLevel::Success, LogEvent::KeyDerived, "");
         if (strlen(fs_info.fstype) == 0) fs_info = getFileSystemInfo(unit.device_path);
-
-        EncUnitHdr hdr{};
-        memcpy(hdr.kdf_salt, kdf_salt.data(), KDF_SALT_SIZE);
-        hdr.version = HEADER_VERSION_CURRENT;
-        hdr.data_start_sector = data_start_sector;
-        hdr.total_sectors = total_sectors;
-        hdr.fs_info = fs_info;
-
-        log(LogLevel::Info, LogEvent::KmacCalculating, "");
-        try {
-            KMACProc Kmac(master_key);
-            auto m = Kmac.calculate(reinterpret_cast<uint8_t*>(&hdr), offsetof(EncUnitHdr, Kmac));
-            if (m.size() == KMAC_SIZE) memcpy(hdr.Kmac, m.data(), KMAC_SIZE);
-            else { log(LogLevel::Error, LogEvent::KmacError, "size"); close(fd); return false; }
-        } catch (const std::exception& e) {
-            log(LogLevel::Error, LogEvent::KmacError, e.what());
-            close(fd);
-            return false;
-        }
-        // Fix de seguridad: el backup se cifra con master_key
-        if (backup_mgr.saveHeader(unit.device_path, hdr, master_key))
-            log(LogLevel::Success, LogEvent::BackupSaved, "");
-        else
-            log(LogLevel::Warning, LogEvent::BackupSaveFailed, "");
-
-        log(LogLevel::Info, LogEvent::HeaderWriting, "");
-        if (!writeHeaderToDevice(fd, hdr)) {
-            log(LogLevel::Error, LogEvent::HeaderWriting, strerror(errno));
-            close(fd);
-            return false;
-        }
-        fsync(fd);
-        log(LogLevel::Success, LogEvent::HeaderWritten, "");
+        header_ok = HeaderProcessor::prepare_for_encrypt(fd, unit, master_key, data_start_sector, total_sectors, backup_mgr, xts_key, fs_info, log_cb);
     } else {
-        EncUnitHdr hdr;
-        log(LogLevel::Info, LogEvent::HeaderVerified, "reading");
-        if (!readHeaderFromDevice(fd, hdr)) {
-            log(LogLevel::Warning, LogEvent::HeaderReadFailed, "intentando backup");
-            // Fix de seguridad: el backup se descifra con master_key
-            if (backup_mgr.loadHeader(unit.device_path, hdr, master_key))
-                log(LogLevel::Success, LogEvent::BackupLoaded, "");
-            else {
-                log(LogLevel::Error, LogEvent::BackupLoadFailed, "");
-                close(fd);
-                return false;
+        header_ok = HeaderProcessor::prepare_for_decrypt(fd, unit, master_key, backup_mgr, xts_key, data_start_sector, fs_info, log_cb);
+        if (header_ok) {
+            uint64_t data_size = (total_sectors - data_start_sector) * SECTOR_SIZE;
+            if (data_start_sector >= total_sectors) {
+                log(LogLevel::Error, LogEvent::DeviceSizeFailed, "Invalid data start sector");
+                header_ok = false;
             }
         }
-        if (hdr.version < 2) {
-            log(LogLevel::Warning, LogEvent::KeyDerived, "version<2 sin KDF");
-            xts_key.resize(64);
-            memcpy(xts_key.data(), master_key.data(), 32);
-            memcpy(xts_key.data() + 32, master_key.data(), 32);
-        } else {
-            log(LogLevel::Info, LogEvent::KeyDeriving, "");
-            kdf_salt.resize(KDF_SALT_SIZE);
-            memcpy(kdf_salt.data(), hdr.kdf_salt, KDF_SALT_SIZE);
-            xts_key = KeyDeriv::deriveSubKey(master_key, kdf_salt, 64);
-            if (xts_key.empty()) { log(LogLevel::Error, LogEvent::KeyDeriveError, ""); close(fd); return false; }
-            log(LogLevel::Success, LogEvent::KeyDerived, "");
-        }
-        log(LogLevel::Info, LogEvent::KmacCalculating, "verificando");
-        try {
-            KMACProc Kmac(master_key);
-            if (!Kmac.verify(reinterpret_cast<uint8_t*>(&hdr), offsetof(EncUnitHdr, Kmac), hdr.Kmac, KMAC_SIZE)) {
-                log(LogLevel::Error, LogEvent::KmacFailed, "");
-                close(fd);
-                return false;
-            }
-        } catch (const std::exception& e) {
-            log(LogLevel::Error, LogEvent::KmacError, e.what());
-            close(fd);
-            return false;
-        }
-        log(LogLevel::Success, LogEvent::KmacVerified, "");
-        fs_info = hdr.fs_info;
-        data_start_sector = hdr.data_start_sector;
-        data_size = (total_sectors - data_start_sector) * SECTOR_SIZE;
     }
 
-    log(LogLevel::Info, LogEvent::DataSizeInfo, std::to_string(data_size));
-    size_t chunk_size = cfg.getChunkSize();
-    uint64_t total_chunks = (data_size + chunk_size - 1) / chunk_size;
-    log(LogLevel::Info, LogEvent::ChunkCountInfo, std::to_string(total_chunks));
-
-    LimQueue<PipeChunk> read_q(MAX_QUEUE_SIZE), write_q(MAX_QUEUE_SIZE);
-    std::atomic<uint64_t> done{0}, bytes_done{0};
-    std::atomic<bool> err{false};
-
-    const bool scrub_chunks = !encrypt;
-
-    std::thread reader([&]() {
-        for (uint64_t c = 0; c < total_chunks && !err && !stop_requested; c++) {
-            PipeChunk chunk(chunk_size, cfg.use_direct_io);
-            chunk.data->set_scrub_on_destroy(scrub_chunks);
-            chunk.index = c;
-            chunk.offset = data_start_sector * SECTOR_SIZE + c * chunk_size;
-            chunk.size = std::min<uint64_t>(chunk_size, total_size - chunk.offset);
-            chunk.start_sector = chunk.offset / SECTOR_SIZE;
-            if (pread(fd, chunk.data->data(), chunk.size, chunk.offset) != (ssize_t)chunk.size) {
-                log(LogLevel::Error, LogEvent::ChunkReadError, std::to_string(c));
-                err = true;
-                break;
-            }
-            read_q.push(std::move(chunk));
-        }
-        read_q.close();
-    });
-
-    int ncpu = (use_custom_config && custom_config.custom_mode)
-                   ? custom_config.crypto_threads
-                   : fixed_config.crypto_threads;
-    std::vector<std::thread> workers;
-    workers.reserve(ncpu);
-    for (int t = 0; t < ncpu; t++) {
-        workers.emplace_back([&]() {
-            AESXTSProc proc(xts_key, encrypt);
-            if (!proc.used_avx512())
-                log(LogLevel::Warning, LogEvent::XtsFallback, "Botan XTS (AVX-512 self-test failed)");
-            PipeChunk chunk(chunk_size, cfg.use_direct_io);
-            while (read_q.pop(chunk) && !err && !stop_requested) {
-                if (!proc.processBuffer(chunk.data->data(), chunk.size, chunk.start_sector)) {
-                    log(LogLevel::Error, LogEvent::ChunkProcessError, std::to_string(chunk.index));
-                    err = true;
-                    break;
-                }
-                write_q.push(std::move(chunk));
-                chunk = PipeChunk(chunk_size, cfg.use_direct_io);
-            }
-        });
+    if (!header_ok) {
+        close(fd);
+        return false;
     }
 
-    // Cota defensiva del reorder buffer: ncpu workers + 2 colas de 2 + writer hand
-    const size_t kMaxReorder = static_cast<size_t>(ncpu) * 4 + 64;
+    uint64_t data_size = (total_sectors - data_start_sector) * SECTOR_SIZE;
 
-    std::thread writer([&]() {
-        PipeChunk chunk(chunk_size, cfg.use_direct_io);
-        uint64_t expected = 0;
-        std::vector<PipeChunk> reorder;
-        while (!err && !stop_requested && expected < total_chunks) {
-            if (!write_q.pop(chunk)) break;
-            if (chunk.index == expected) {
-                if (pwrite(fd, chunk.data->data(), chunk.size, chunk.offset) != (ssize_t)chunk.size) {
-                    log(LogLevel::Error, LogEvent::ChunkWriteError, std::to_string(chunk.index));
-                    err = true;
-                    break;
-                }
-                done++;
-                bytes_done += chunk.size;
-                speed_meter.addBytes(chunk.size);
-                progress(bytes_done.load(), data_size, speed_meter.getCurrentSpeed());
-                expected++;
-                int flush = (unit.device_type == DevType::HDD || unit.device_type == DevType::USB2) ? 2 : 1;
-                if (chunk.index % flush == 0) fsync(fd);
-                for (auto it = reorder.begin(); it != reorder.end(); ) {
-                    if (it->index == expected) {
-                        if (pwrite(fd, it->data->data(), it->size, it->offset) != (ssize_t)it->size) {
-                            log(LogLevel::Error, LogEvent::ChunkWriteError, std::to_string(it->index));
-                            err = true;
-                            break;
-                        }
-                        done++;
-                        bytes_done += it->size;
-                        speed_meter.addBytes(it->size);
-                        progress(bytes_done.load(), data_size, speed_meter.getCurrentSpeed());
-                        expected++;
-                        it = reorder.erase(it);
-                    } else ++it;
-                }
-            } else if (chunk.index > expected) {
-                if (reorder.size() >= kMaxReorder) {
-                    log(LogLevel::Error, LogEvent::ChunkWriteError, "reorder overflow");
-                    err = true;
-                    break;
-                }
-                reorder.push_back(std::move(chunk));
-                chunk = PipeChunk(chunk_size, cfg.use_direct_io);
-            }
-        }
-        write_q.close();
-    });
+    // 5. Ejecutar el Pipeline de Datos (Delegado a DataPipeline)
+    DataPipeline::Context pipe_ctx{
+        fd, data_size, data_start_sector, cfg, unit.device_type, xts_key, encrypt,
+        speed_meter, stop_requested,
+        log_cb,
+        [this](uint64_t c, uint64_t t, double s) { this->progress(c, t, s); }
+    };
+    
+    DataPipeline pipeline(pipe_ctx);
+    bool pipeline_ok = pipeline.run();
 
-    while (!err && !stop_requested && done < total_chunks)
-        std::this_thread::sleep_for(std::chrono::milliseconds(PROGRESS_UPDATE_MS));
-
-    read_q.close();
-    write_q.close();
-    if (reader.joinable()) reader.join();
-    for (auto& t : workers) if (t.joinable()) t.join();
-    if (writer.joinable()) writer.join();
-    fsync(fd);
-
-    if (!encrypt && !err && !stop_requested) {
+    // 6. Limpieza final (solo si desencriptamos exitosamente)
+    if (!encrypt && pipeline_ok) {
         log(LogLevel::Info, LogEvent::CleanupHeader, "");
         size_t hsz = HEADER_SECTORS * SECTOR_SIZE;
         std::vector<uint8_t> zeros(hsz, 0);
@@ -859,14 +976,9 @@ bool UnitEncryptor::doProcess(const StorUnit& unit, const Botan::secure_vector<u
         if (backup_mgr.removeBackup(unit.device_path))
             log(LogLevel::Success, LogEvent::BackupRemoved, "");
     }
+
     close(fd);
-
-    stats.total_bytes = bytes_done.load();
-    if (err) log(LogLevel::Error, LogEvent::ProcessingFailed, "");
-    else if (stop_requested) log(LogLevel::Warning, LogEvent::ProcessingStopped, "");
-    else log(LogLevel::Success, LogEvent::ProcessingComplete, "");
-
-    return !err && done == total_chunks && !stop_requested;
+    return pipeline_ok;
 }
 
 bool UnitEncryptor::cleanHeader(const StorUnit& unit) {
@@ -888,7 +1000,6 @@ bool UnitEncryptor::cleanHeader(const StorUnit& unit) {
 bool UnitEncryptor::restoreHeader(const StorUnit& unit, const Botan::secure_vector<uint8_t>& master_key) {
     log(LogLevel::Info, LogEvent::HeaderRestoring, "");
     EncUnitHdr hdr;
-    // Fix de seguridad: el backup se descifra con master_key
     if (!backup_mgr.loadHeader(unit.device_path, hdr, master_key)) {
         log(LogLevel::Error, LogEvent::BackupLoadFailed, "");
         return false;
