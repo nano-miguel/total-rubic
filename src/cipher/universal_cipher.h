@@ -127,6 +127,7 @@ class MMapRAII {
     int fd;
     bool is_mapped;
   public:
+  
     MMapRAII() : data(nullptr), size(0), fd(-1), is_mapped(false) {}
     ~MMapRAII() { unmap(); }
     bool map(int file_fd, size_t file_size, int prot = PROT_READ, int flags = MAP_PRIVATE) {
@@ -163,6 +164,7 @@ class MemoryLockRAII {
     size_t size;
     bool locked;
   public:
+
     MemoryLockRAII(void* memory_ptr, size_t memory_size) : ptr(memory_ptr), size(memory_size), locked(false) { lock(); }
     ~MemoryLockRAII() { unlock(); }
     bool lock() {
@@ -321,6 +323,7 @@ template <typename T> class WorkQueue {
     size_t max_size;
     std::atomic<size_t> queue_size{0};
   public:
+
     WorkQueue(size_t max_sz = 64) : max_size(max_sz) {}
     ~WorkQueue() { stop(); }
     void push(T item) {
@@ -458,6 +461,7 @@ class NameObfus {
         }
     };
   public:
+
     NameObfus(size_t cache_sz = 1024,
               const std::string& counter_file = ".cipher_counters.dat",
               const std::string& key_file = ".cipher_namekey.dat");
@@ -509,6 +513,7 @@ class AES256GCM {
 
 class UniversalCipher {
   public:
+
     using LogCallback = std::function<void(univ_log::LogLevel level, univ_log::LogEvent event, const std::string& data)>;
     using ProgressCallback = std::function<void(size_t current, size_t total, const std::string& file)>;
     struct Stats {
@@ -548,6 +553,7 @@ class UniversalCipher {
     bool decryptFileInPlace(const std::string& inputPath);
     bool processPath(const std::string& path, bool encryptMode);
   public:
+
     UniversalCipher();
     ~UniversalCipher();
     void setLogCallback(LogCallback cb) { log_cb_ = std::move(cb); }
