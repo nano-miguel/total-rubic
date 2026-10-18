@@ -1,5 +1,5 @@
 // cipher/unit/devdetect.cpp
-#include "../unit_encryptor.h" // <-- RUTA ACTUALIZADA
+#include "../unit_encryptor.h" 
 
 #include <cstdio>
 #include <cstring>
@@ -11,8 +11,8 @@
 std::string DevDetect::getSysPath(const std::string& device) {
     std::string devname = device;
     if (devname.find("/dev/") == 0) devname = devname.substr(5);
-    while (!devname.empty() && isdigit(static_cast<unsigned char>(devname.back())))
-        devname.pop_back();
+        while (!devname.empty() && isdigit(static_cast<unsigned char>(devname.back())))
+                devname.pop_back();
     return "/sys/block/" + devname;
 }
 
@@ -21,7 +21,8 @@ bool DevDetect::checkUSB(const std::string& syspath) {
     FILE* f = fopen(uevent.c_str(), "r");
     if (f) {
         char line[256];
-        while (fgets(line, sizeof(line), f)) {
+        while (fgets(line, sizeof(line), f)) 
+        {
             if (strstr(line, "USB") || strstr(line, "usb")) {
                 fclose(f);
                 return true;
@@ -41,13 +42,13 @@ bool DevDetect::checkUSB(const std::string& syspath) {
 std::string DevDetect::readSpeed(const std::string& syspath) {
     FILE* f = fopen((syspath + "/device/speed").c_str(), "r");
     if (!f) return "";
-    char speed[32];
+     char speed[32];
     if (fgets(speed, sizeof(speed), f)) {
         speed[strcspn(speed, "\n")] = 0;
         fclose(f);
         return speed;
     }
-    fclose(f);
+        fclose(f);
     return "";
 }
 
@@ -63,7 +64,7 @@ bool DevDetect::isRemovable(const std::string& syspath) {
     FILE* f = fopen((syspath + "/removable").c_str(), "r");
     if (f) {
         char r;
-        if (fscanf(f, "%c", &r) == 1) {
+         if (fscanf(f, "%c", &r) == 1) {
             fclose(f);
             return r == '1';
         }
@@ -81,11 +82,13 @@ DevType DevDetect::detect(const std::string& device) {
 
     std::string syspath = getSysPath(device);
 
-    if (checkUSB(syspath) || isRemovable(syspath)) {
+    if (checkUSB(syspath) || isRemovable(syspath))
+    
+    {
         std::string speed = readSpeed(syspath);
         if (!speed.empty())
             return atoi(speed.c_str()) >= 500 ? DevType::USB3 : DevType::USB2;
-        return DevType::USB2;
+            return DevType::USB2;
     }
 
     FILE* f = fopen((syspath + "/queue/rotational").c_str(), "r");
