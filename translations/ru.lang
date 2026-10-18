@@ -1,0 +1,548 @@
+# ============================================================
+# RUBIC-A — Русский (ru)
+# ============================================================
+# Формат: ключ=значение
+# Комментарии: строки, начинающиеся с #
+# Плейсхолдеры: {0}, {1}, ...
+# ВНИМАНИЕ: пробелы в конце значения значимы
+#           (подсказки перед вводом заканчиваются пробелом)
+# ============================================================
+
+# ------------------------------------------------------------
+# ОБЩЕЕ
+# ------------------------------------------------------------
+press_enter=Нажмите Enter для продолжения...
+press_enter_short=Нажмите Enter...
+back=Назад
+cancel=Отмена
+yes_no_hint=(д/Н)
+yes_no_hint_alt=(Д/н)
+continue_prompt=Продолжить? 
+confirm_continue=Продолжить? 
+error_unknown=Неизвестная ошибка
+error_invalid_input=Неверный ввод
+error_invalid_selection=Неверный выбор
+error_cancelled=Операция отменена
+
+# ------------------------------------------------------------
+# ВХОД / УЧЁТНАЯ ЗАПИСЬ
+# ------------------------------------------------------------
+login_title=ВХОД В СИСТЕМУ
+login_user_prompt=Пользователь: 
+login_password_prompt=Пароль: 
+login_ok=Добро пожаловать, {0}
+login_fail=Неверные учётные данные
+login_user_not_found=Пользователь не найден
+login_wrong_password=Неверный пароль
+login_hardware_mismatch=Неверные учётные данные или оборудование
+login_throttled=Заблокировано. Подождите {0} секунд.
+login_throttled_long=Временно заблокировано из-за большого количества неудачных попыток
+
+register_title=СОЗДАТЬ УЧЁТНУЮ ЗАПИСЬ
+register_user_prompt=Пользователь: 
+register_confirm_prompt=Подтверждение: 
+register_pw_mismatch=✗ Не совпадают ({0}/3)
+register_pw_too_short=X Минимум 8 символов
+register_ok=✓ Учётная запись успешно создана
+register_id_generated=✓ Цифровая личность создана автоматически
+register_id_generating=Автоматическое создание цифровой личности Dilithium-6x5-AES-r3...
+register_id_fail=⚠ Предупреждение: не удалось автоматически создать цифровую личность
+register_id_fail_hint=Вы можете создать её позже в меню настроек
+register_argon=Генерация учётных данных ARGON2 и привязка к оборудованию...
+register_identity_linked=✓ Цифровая личность привязана к системе
+
+logout_msg=Выход из системы...
+exit_msg=Завершение работы...
+
+# ------------------------------------------------------------
+# ГЛАВНОЕ МЕНЮ
+# ------------------------------------------------------------
+main_menu_title=ГЛАВНОЕ МЕНЮ - {0}
+main_menu_tools=---ИНСТРУМЕНТЫ ШИФРОВАНИЯ//
+main_menu_security=---УПРАВЛЕНИЕ БЕЗОПАСНОСТЬЮ//
+main_menu_share=---ОБМЕН ФАЙЛАМИ//
+main_menu_admin=---АДМИНИСТРИРОВАНИЕ И СЕССИЯ//
+main_menu_encrypt_unit=[1] Шифровать диск
+main_menu_universal=[2] Универсальный шифратор
+main_menu_keys=[3] Менеджер ключей
+main_menu_share_files=[4] Обмен файлами
+main_menu_config=[5] Настройки
+main_menu_logout=[6] Выйти
+main_menu_exit=[0] Выход
+main_menu_prompt=Опция [0-6]: 
+
+# ------------------------------------------------------------
+# НАСТРОЙКИ (ядро)
+# ------------------------------------------------------------
+config_title=НАСТРОЙКИ
+config_change_pwd=[1] Изменить пароль
+config_user_info=[2] Информация о пользователе
+config_gen_identity=[3] Создать цифровую личность
+config_lang=[4] Язык / Language ({0})
+config_back=[5] Назад
+config_prompt=Опция [1-5]: 
+
+config_lang_title=Доступные языки:
+config_lang_current=(текущий)
+config_lang_select=Выберите: 
+config_lang_changed=✓ Язык изменён на {0}
+config_lang_save_fail=✗ Не удалось сохранить изменение
+config_lang_none=✗ Нет файлов .lang в translations/
+
+# ------------------------------------------------------------
+# ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ
+# ------------------------------------------------------------
+userinfo_title=ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ
+userinfo_user=Пользователь: 
+userinfo_algo=Алгоритм: 
+userinfo_created=Создано: 
+userinfo_identity=Личность: 
+userinfo_identity_active=✓ АКТИВНА
+userinfo_identity_pending=✗ ОЖИДАЕТ
+userinfo_fingerprint=Отпечаток: 
+userinfo_load_error=✗ Ошибка: не удалось загрузить информацию о пользователе
+
+# ------------------------------------------------------------
+# СМЕНА ПАРОЛЯ
+# ------------------------------------------------------------
+chpwd_title=ИЗМЕНИТЬ ПАРОЛЬ
+chpwd_current=Текущий пароль: 
+chpwd_new=Пароль: 
+chpwd_confirm=Подтверждение: 
+chpwd_ok=✓ Пароль изменён
+chpwd_fail=✗ {0}
+
+# ------------------------------------------------------------
+# ЦИФРОВАЯ ЛИЧНОСТЬ
+# ------------------------------------------------------------
+ident_title=СОЗДАТЬ ЦИФРОВУЮ ЛИЧНОСТЬ
+ident_generating=Генерация ключа Dilithium-6x5-AES-r3 (PQC)...
+ident_ok=✓ Личность успешно создана
+ident_fingerprint=Отпечаток: 
+ident_fail=✗ {0}
+
+# ------------------------------------------------------------
+# МЕНЕДЖЕР КЛЮЧЕЙ
+# ------------------------------------------------------------
+keymgr_title=МЕНЕДЖЕР КЛЮЧЕЙ AES-256
+keymgr_user=Пользователь: 
+keymgr_count=Сохранённых ключей: 
+keymgr_protection=Защита: Argon2id + AES-256-GCM
+
+keymgr_menu_create=[1] Создать новый ключ AES-256
+keymgr_menu_toggle=[2] Включить/Отключить ключ
+keymgr_menu_list=[3] Список ключей
+keymgr_menu_delete=[4] Удалить ключ
+keymgr_menu_back=[5] Назад
+keymgr_menu_prompt=Выберите опцию [1-5]: 
+
+keymgr_create_title=СОЗДАТЬ НОВЫЙ КЛЮЧ AES-256
+keymgr_create_name_section=ИМЯ КЛЮЧА
+keymgr_create_name_prompt=Имя для идентификации ключа: 
+keymgr_create_name_empty=✗ Имя ключа не может быть пустым
+keymgr_create_name_exists=✗ Ключ с таким именем уже существует
+keymgr_create_usage_section=НАЗНАЧЕНИЕ КЛЮЧА
+keymgr_create_usage_prompt=Для чего вы будете использовать этот ключ: 
+keymgr_create_usage_default=Шифрование дисков / Универсальный шифратор
+keymgr_create_access_section=КОД ДОСТУПА
+keymgr_create_access_hint=Установите код доступа для этого ключа.
+keymgr_create_access_prompt=Код доступа: 
+keymgr_create_access_confirm=Подтвердите код доступа: 
+keymgr_create_access_empty=✗ Код доступа не может быть пустым
+keymgr_create_generating=Генерация ключа AES-256...
+keymgr_create_ok=✓ Ключ успешно сгенерирован
+keymgr_create_created=КЛЮЧ УСПЕШНО СОЗДАН
+keymgr_create_info_name=Имя: 
+keymgr_create_info_type=Тип: AES-256 (256 бит)
+keymgr_create_info_usage=Назначение: 
+keymgr_create_info_state=Состояние: 
+keymgr_create_state_inactive=НЕАКТИВЕН
+
+keymgr_toggle_title=ВКЛЮЧИТЬ/ОТКЛЮЧИТЬ КЛЮЧ
+keymgr_toggle_no_keys=Нет сохранённых ключей.
+keymgr_toggle_select=ВЫБЕРИТЕ КЛЮЧ
+keymgr_toggle_select_prompt=Выберите номер ключа: 
+keymgr_toggle_deactivate_prompt=Отключить ключ "{0}"? 
+keymgr_toggle_activate_prompt=Включить ключ "{0}"? 
+keymgr_toggle_access_prompt=Код доступа для "{0}": 
+keymgr_toggle_ok_deactivate=✓ Ключ отключён
+keymgr_toggle_ok_activate=✓ Ключ включён
+keymgr_toggle_activated_name=Имя: 
+keymgr_toggle_activated_state=Состояние: 
+keymgr_toggle_state_active=АКТИВЕН
+
+keymgr_list_title=СПИСОК КЛЮЧЕЙ AES-256
+keymgr_list_empty=Нет сохранённых ключей.
+keymgr_list_count=Сохранённых ключей ({0}):
+keymgr_list_summary=Всего: {0} ключей | Активных: {1} | Неактивных: {2}
+keymgr_list_status_inactive=(НЕАКТИВЕН)
+
+keymgr_delete_title=УДАЛИТЬ КЛЮЧ
+keymgr_delete_empty=Нет ключей для удаления.
+keymgr_delete_select=ВЫБЕРИТЕ КЛЮЧ ДЛЯ УДАЛЕНИЯ
+keymgr_delete_prompt=Выберите номер ключа для удаления: 
+keymgr_delete_warning=⚠ ВНИМАНИЕ: Это действие нельзя отменить.
+keymgr_delete_confirm=Вы уверены, что хотите удалить ключ "{0}"? 
+keymgr_delete_access_prompt=Код доступа для подтверждения: 
+keymgr_delete_ok=✓ Ключ удалён
+
+keymgr_keyinfo_type=Тип: 
+keymgr_keyinfo_usage=Назначение: 
+keymgr_keyinfo_created=Создан: 
+keymgr_keyinfo_last_used=Последнее использование: 
+keymgr_keyinfo_state=Состояние: 
+
+keymgr_verify_title=ПРОВЕРКА БЕЗОПАСНОСТИ
+keymgr_verify_prompt=Введите ваш пароль: 
+keymgr_verify_empty=✗ Пустой пароль
+keymgr_verify_fail=✗ Неверный пароль. Доступ запрещён.
+keymgr_verify_ok=✓ Доступ разрешён.
+
+# ------------------------------------------------------------
+# УНИВЕРСАЛЬНЫЙ ШИФРАТОР
+# ------------------------------------------------------------
+univ_title=УНИВЕРСАЛЬНЫЙ ШИФРАТОР
+univ_menu_title=ГЛАВНОЕ МЕНЮ
+univ_menu_encrypt=[1] Зашифровать файл/папку
+univ_menu_decrypt=[2] Расшифровать файл/папку
+univ_menu_config=[3] Настройки
+univ_menu_exit=[0] Выход
+univ_menu_prompt=Выберите опцию [0-3]: 
+
+univ_keys_title=ДОСТУПНЫЕ КЛЮЧИ
+univ_keys_active=АКТИВНЫЕ КЛЮЧИ:
+univ_keys_cancel=[0] Отмена
+univ_keys_prompt=Выберите [0-{0}]: 
+univ_keys_none=Нет активных ключей.
+univ_keys_no_manager=✗ Менеджер ключей недоступен
+univ_keys_invalid=✗ Неверный выбор
+
+univ_activation_prompt=Код активации: 
+univ_activation_fail=✗ Неверный код активации
+
+univ_path_prompt=Путь: 
+univ_ok=✓ Операция завершена
+
+univ_stats_title=СТАТИСТИКА
+univ_stats_files=Файлов: 
+univ_stats_success=Успешно: 
+univ_stats_fail=Ошибок: 
+univ_stats_time=Время: 
+
+univ_config_title=НАСТРОЙКИ
+univ_config_current=ТЕКУЩИЕ НАСТРОЙКИ:
+univ_config_threads_system=Системных потоков: 
+univ_config_threads_crypto=→ Шифрование: 
+univ_config_threads_io=→ Ввод/вывод: 
+univ_config_threads_reserved=→ Зарезервировано для ОС: 
+univ_config_buffer=Буфер: 
+univ_config_retries=Повторы: 
+univ_config_mmap=mmap (> {0}МБ): 
+univ_config_parallel=Параллельных файлов: 
+univ_config_hmac=HMAC заголовка: 
+univ_config_yes=✓
+univ_config_no=✗
+univ_config_yes_full=Да
+univ_config_no_full=Нет
+
+univ_config_buf_max=[1] Максимальный буфер ({0} МБ)
+univ_config_rate=[2] Ограничение скорости ({0} МБ/с)
+univ_config_hmac_toggle=[3] HMAC заголовка ({0})
+univ_config_parallel_toggle=[4] Параллельных файлов ({0})
+univ_config_retries_toggle=[5] Повторов ({0})
+univ_config_clear_counters=[6] Сбросить счётчики
+univ_config_back=[0] Назад
+univ_config_prompt=Выберите [0-6]: 
+
+univ_config_buf_prompt=МБ (2-32): 
+univ_config_rate_prompt=МБ/с (10-1000): 
+univ_config_parallel_prompt=Число (1-16): 
+univ_config_retries_prompt=Число (0-5): 
+univ_config_clear_prompt=Удалить все счётчики? 
+univ_config_cleared=⚠ Счётчики удалены (перезапустите приложение для их воссоздания)
+
+# ------------------------------------------------------------
+# ШИФРАТОР ДИСКОВ
+# ------------------------------------------------------------
+unit_title=ШИФРАТОР ДИСКОВ
+unit_mode_custom=Пользовательский режим активен
+unit_units_title=ОБНАРУЖЕННЫЕ ДИСКИ:
+unit_units_none=Диски не обнаружены
+unit_units_system=СИСТЕМА
+unit_units_encrypted=ЗАШИФРОВАН
+unit_units_normal=ОБЫЧНЫЙ
+unit_units_mounted_flag=(С)
+unit_units_backup_flag=[Р]
+
+unit_menu_select=[1-{0}] Выбрать диск
+unit_menu_config=[C] Настройки
+unit_menu_refresh=[R] Обновить
+unit_menu_exit=[0] Выход
+unit_menu_prompt=Выберите [0-{0},C,R]: 
+
+unit_detail_size=Размер: 
+unit_detail_type=Тип: 
+unit_detail_state=Состояние: 
+unit_detail_backup=Резервная копия доступна
+unit_detail_mounted=Смонтирован в: 
+unit_detail_system=⚠ СИСТЕМНЫЙ ДИСК - ОПЕРАЦИИ ОГРАНИЧЕНЫ
+
+unit_action_encrypt=[1] Зашифровать диск
+unit_action_decrypt=[1] Расшифровать диск
+unit_action_mount=[2] Смонтировать диск
+unit_action_unmount=[3] Размонтировать диск
+unit_action_format=[4] Форматировать диск
+unit_action_restore=[5] Восстановить заголовок из копии
+unit_action_back=[0] Назад
+unit_action_prompt=Выберите [0-5]: 
+
+unit_mount_prompt=Точка монтирования [{0}]: 
+unit_mount_already=Уже смонтирован в {0}
+unit_mount_not=Диск не смонтирован
+
+unit_process_title_cifrar=ШИФРОВАТЬ
+unit_process_title_descifrar=РАСШИФРОВАТЬ
+unit_process_confirm_prompt=Введите '{0}': 
+unit_process_keyword_encrypt=ШИФРОВАТЬ
+unit_process_keyword_decrypt=РАСШИФРОВАТЬ
+unit_process_root_warning=⚠ Эта операция требует прав root.
+unit_process_root_hint1=У вас запросят пароль sudo.
+unit_process_root_hint2=По завершении вы автоматически вернётесь к обычному пользователю.
+unit_process_unmount_prompt=Размонтировать? 
+unit_process_mount_after=Смонтировать расшифрованный диск? 
+
+unit_stats_title=СТАТИСТИКА
+unit_stats_total=Всего: 
+unit_stats_time=Время: 
+unit_stats_speed=Скорость: 
+unit_stats_peak=пик: 
+
+unit_format_title=ФОРМАТ ДИСКА
+unit_format_warn_encrypted=⚠ Диск помечен как ЗАШИФРОВАННЫЙ
+unit_format_clean=[1] Очистить только заголовок (снять метку)
+unit_format_fs_title=ФАЙЛОВАЯ СИСТЕМА:
+unit_format_fat32=[2] FAT32 (USB, совместимый)
+unit_format_ntfs=[3] NTFS (Windows)
+unit_format_ext4=[4] ext4 (Linux)
+unit_format_exfat=[5] exFAT (большие файлы)
+unit_format_cancel=[0] Отмена
+unit_format_prompt=Выберите опцию [0-5]: 
+unit_format_clean_ok=✓ Диск помечен как НЕ ЗАШИФРОВАННЫЙ
+unit_format_ok=✓ Диск отформатирован и помечен как НЕ ЗАШИФРОВАННЫЙ
+
+unit_format_quick_warn=⚠ БЫСТРОЕ ФОРМАТИРОВАНИЕ
+unit_format_quick_unit=Диск: 
+unit_format_quick_size=Размер: 
+unit_format_quick_type=Формат: 
+unit_format_quick_confirm=Введите 'FORMAT' для подтверждения: 
+unit_format_quick_keyword=FORMAT
+unit_format_quick_cancelled=Отменено.
+unit_format_quick_formatting=Форматирование...
+
+unit_config_title=НАСТРОЙКИ
+unit_config_default=НАСТРОЙКИ ПО УМОЛЧАНИЮ:
+unit_config_cores=Ядер: 
+unit_config_io_threads=Потоков ввода/вывода: 
+unit_config_crypto_threads=Потоков шифрования: 
+unit_config_reserved_os=Зарезервировано для ОС: 
+unit_config_custom=Пользовательские настройки:
+unit_config_buffer=Буфер: 
+unit_config_direct_io=Прямой ввод/вывод: 
+unit_config_custom_mode=Пользовательский режим: 
+unit_config_inactive=Пользовательский режим: НЕАКТИВЕН
+unit_config_activated=Включён
+unit_config_deactivated=Отключён
+unit_config_yes=Да
+unit_config_no=Нет
+
+unit_config_menu_custom=[1] Пользовательские настройки
+unit_config_menu_toggle=[2] Переключить пользовательский режим
+unit_config_menu_back=[0] Назад
+unit_config_menu_prompt=Выберите опцию [0-2]: 
+
+unit_config_custom_title=ПОЛЬЗОВАТЕЛЬСКИЕ НАСТРОЙКИ
+unit_config_custom_buffer=Размер буфера (МБ) [{0}]: 
+unit_config_custom_io=Потоков ввода/вывода [{0}]: 
+unit_config_custom_crypto=Потоков шифрования [{0}]: 
+unit_config_custom_direct=Использовать прямой ввод/вывод (д/н) [{0}]: 
+unit_config_custom_mode_prompt=Включить пользовательский режим (д/н) [{0}]: 
+unit_config_saved=✓ Настройки сохранены в rubic_config.cfg
+unit_config_mode_on=✓ Пользовательский режим включён
+unit_config_mode_off=✓ Пользовательский режим отключён
+
+unit_no_key=Не удалось получить мастер-ключ
+unit_no_key_short=Не удалось получить ключ
+
+# ------------------------------------------------------------
+# ОБМЕН ФАЙЛАМИ
+# ------------------------------------------------------------
+share_title=ОБМЕН ФАЙЛАМИ
+share_send=[1] Отправить файлы
+share_recv=[2] Получить файлы
+share_trust=[3] Управление доверенными личностями 
+share_net=[4] Настройки сети
+share_back=[5] Назад
+share_prompt=Опция: 
+
+share_send_title=ОТПРАВИТЬ ФАЙЛЫ
+share_send_format=Формат: IP:ПОРТ (по умолчанию :{0})
+share_send_addr_prompt=Адрес назначения: 
+share_send_addr_invalid=✗ Неверный адрес. Формат: IP:ПОРТ
+share_send_path_prompt=Путь к файлу/папке: 
+share_send_no_files=✗ Файлы не найдены
+share_send_files_info=Файлов: {0} | Всего: {1} МБ
+share_send_confirm=Продолжить? 
+share_send_sending=Отправка {0} файлов...
+share_send_ok=✓ Отправка завершена
+share_send_fail=✗ Отправка не удалась
+share_send_enter=Нажмите Enter...
+
+share_recv_title=ПОЛУЧИТЬ ФАЙЛЫ
+share_recv_start_fail=✗ Не удалось запустить сервер приёма
+share_recv_waiting=✓ Ожидание на {0}:{1}
+share_recv_your_id=✓ Ваш ID: 
+share_recv_folder=Папка приёма: 
+share_recv_stop_hint=[Введите 'q' и нажмите ENTER для остановки приёма]
+share_recv_stopped=✓ Приём остановлен
+share_recv_enter=Нажмите Enter для возврата...
+
+share_trust_title=ДОВЕРЕННЫЕ ОТПЕЧАТКИ (TOFU)
+share_trust_empty=Нет зарегистрированных личностей.
+share_trust_add_prompt=Ввести отпечаток вручную? 
+share_trust_fp_prompt=Отпечаток: 
+share_trust_saved=Отпечаток сохранён
+share_trust_save_fail=✗ Не удалось сохранить отпечаток
+
+share_net_current_ip=Текущий IP: 
+share_net_kem_port=Порт обмена (KEM): 
+share_net_xfer_port=Порт передачи: 
+share_net_change_prompt=Изменить порты? 
+share_net_kem_new=Новый порт обмена: 
+share_net_xfer_new=Новый порт передачи: 
+share_net_updated=✓ Порты обновлены
+share_net_invalid=✗ Неверный порт
+
+# ------------------------------------------------------------
+# TOFU / ОПОВЕЩЕНИЯ БЕЗОПАСНОСТИ
+# ------------------------------------------------------------
+tofu_title=⚠ ОПОВЕЩЕНИЕ БЕЗОПАСНОСТИ (TOFU) ⚠
+tofu_new_incoming=Обнаружено входящее соединение от новой или непроверенной личности.
+tofu_new_outgoing=Вы подключаетесь к новой или непроверенной личности.
+tofu_user=Пользователь: 
+tofu_fingerprint=Отпечаток:  
+tofu_prompt=Доверять этой личности, продолжить и сохранить на будущее? 
+tofu_accepted=✓ Личность сохранена как доверенная. Продолжение...
+tofu_rejected=✗ Соединение отменено.
+
+mitm_title=⚠⚠⚠ ОПОВЕЩЕНИЕ БЕЗОПАСНОСТИ! ⚠⚠⚠
+mitm_detail=Обнаружена возможная MITM-атака против: {0}
+mitm_abort=Подпись Dilithium удалённой стороны НЕВЕРНА. Соединение прервано.
+
+# ------------------------------------------------------------
+# СОБЫТИЯ — SHARE MANAGER
+# ------------------------------------------------------------
+log_share_connecting=  Подключение к {0}...
+log_share_connect_failed=  ✗ Не удалось подключиться: {0}
+log_share_exchange_failed=  ✗ Не удалось обменяться ключами с {0}
+log_share_session_established=  ✓ Защищённая сессия: {0}
+log_share_receiving_from=  Приём от {0}...
+log_share_server_start_failed=  ✗ Не удалось запустить серверы
+log_share_kyber_gen_failed=  ✗ Не удалось сгенерировать ключи Kyber
+log_share_server_started=  ✓ Серверы запущены
+log_share_server_stopped=  ✓ Серверы остановлены
+log_share_no_files=  ⚠ Нет файлов для отправки
+log_share_sending_files=  Отправка {0} файлов...
+log_share_send_complete=  ✓ Отправка завершена ({0})
+log_share_send_failed=  ✗ Отправка не удалась к {0}
+log_share_identity_load_error=  ✗ Ошибка загрузки личности Dilithium
+log_share_trust_accepted=  ✓ Личность {0} помечена как доверенная
+log_share_trust_rejected=  ✗ Личность {0} отклонена
+
+# ------------------------------------------------------------
+# СОБЫТИЯ — UNIT ENCRYPTOR
+# ------------------------------------------------------------
+log_unit_header_writing=  Запись заголовка...
+log_unit_header_written=  ✓ Заголовок записан
+log_unit_header_read_failed=  ⚠ Заголовок нечитаем: {0}
+log_unit_header_verified=  ✓ {0}
+log_unit_header_removed=  ✓ Заголовок удалён
+log_unit_header_restoring=  Восстановление заголовка...
+log_unit_header_restored=  ✓ Заголовок восстановлен
+log_unit_header_restore_failed=  ✗ Ошибка восстановления заголовка
+log_unit_header_clean_failed=  ✗ Ошибка очистки заголовка
+log_unit_backup_saved=  ✓ Резервная копия сохранена
+log_unit_backup_save_failed=  ⚠ Не удалось сохранить резервную копию
+log_unit_backup_loaded=  ✓ Заголовок восстановлен из копии
+log_unit_backup_load_failed=  ✗ Не удалось загрузить резервную копию
+log_unit_backup_removed=  ✓ Резервная копия удалена
+log_unit_salt_generating=  Генерация соли KDF...
+log_unit_salt_generated=  ✓ Соль сгенерирована
+log_unit_salt_error=  ✗ Ошибка генерации соли KDF
+log_unit_key_deriving=  Деривация ключа...
+log_unit_key_derived=  ✓ Ключ получен
+log_unit_key_derive_error=  ✗ Ошибка деривации ключа
+log_unit_hmac_calc=  Вычисление HMAC...
+log_unit_hmac_verify=  Проверка HMAC...
+log_unit_hmac_error=  ✗ Ошибка HMAC: {0}
+log_unit_hmac_verified=  ✓ HMAC проверен
+log_unit_hmac_failed=  ✗ Аутентификация HMAC не удалась
+log_unit_sys_disk_blocked=  ⚠ НЕЛЬЗЯ ШИФРОВАТЬ СИСТЕМНЫЙ ДИСК
+log_unit_already_encrypted=  Диск уже зашифрован
+log_unit_not_encrypted=  Диск не зашифрован
+log_unit_mounted=  ⚠ Диск смонтирован в {0}
+log_unit_master_key_invalid=  Не удалось получить мастер-ключ: {0}
+log_unit_device_open_failed=  Не удалось открыть устройство: {0}
+log_unit_device_open_retry=  Повтор {0}...
+log_unit_device_size_failed=  Ошибка получения размера: {0}
+log_unit_device_type=  Обнаружен тип: {0}
+log_unit_config_auto=  Режим: АВТОМАТИЧЕСКИЙ ({0})
+log_unit_config_custom=  Режим: ПОЛЬЗОВАТЕЛЬСКИЙ ({0})
+log_unit_chunk_size=  Блок: {0} МБ
+log_unit_io_direct=  Режим ввода/вывода: ПРЯМОЙ
+log_unit_io_normal=  Режим ввода/вывода: ОБЫЧНЫЙ
+log_unit_data_size=  Данных для обработки: {0}
+log_unit_chunk_count=  Обработка {0} блоков...
+log_unit_processing=  Обработка...
+log_unit_processing_complete=  ✓ Обработка завершена
+log_unit_processing_failed=  ✗ Ошибка во время обработки
+log_unit_processing_stopped=  ⚠ Обработка остановлена
+log_unit_chunk_read_error=  ✗ Ошибка чтения блока {0}
+log_unit_chunk_process_error=  ✗ Ошибка обработки блока {0}
+log_unit_chunk_write_error=  ✗ Ошибка записи блока {0}
+log_unit_mounting=  Монтирование в {0}...
+log_unit_mounted_ok=  ✓ Смонтирован в {0}
+log_unit_mount_failed=  ✗ Ошибка монтирования (код: {0})
+log_unit_unmounting=  Размонтирование {0}...
+log_unit_unmounted=  ✓ Размонтирован
+log_unit_unmount_failed=  ✗ Не удалось размонтировать
+log_unit_cleanup_header=  Удаление заголовка...
+log_unit_cleanup_backup=  Удаление резервной копии...
+log_unit_format_start=  Форматирование {0}...
+log_unit_format_ok=  ✓ Успешно отформатировано
+log_unit_format_failed=  ✗ Ошибка форматирования (код: {0})
+
+# ------------------------------------------------------------
+# СОБЫТИЯ — UNIVERSAL CIPHER
+# ------------------------------------------------------------
+log_univ_path_invalid=✗ Неверный путь: {0}
+log_univ_no_files=⚠ Нет файлов
+log_univ_no_files_process=⚠ Нет файлов для обработки
+log_univ_processing_single=Обработка...
+log_univ_file_done=  ✓ Завершено
+log_univ_file_error=  ✗ Ошибка
+log_univ_file_move_error=  ✗ Ошибка перемещения файла
+log_univ_no_keymgr=✗ Менеджер ключей недоступен
+log_univ_key_not_found=✗ Ключ не найден: {0}
+log_univ_key_not_active=✗ Ключ '{0}' неактивен
+log_univ_key_value_error=✗ Не удалось получить значение ключа
+log_univ_key_length_error=✗ Неверная длина ключа
+
+# ------------------------------------------------------------
+# СОБЫТИЯ — KEY MANAGER
+# ------------------------------------------------------------
+log_keymgr_usersdir_fail=✗ Не удалось создать директорию пользователей
+log_keymgr_file_create_fail=✗ Не удалось создать файл ключей
+log_keymgr_file_open_fail=✗ Не удалось открыть файл ключей
+log_keymgr_pwd_not_set=✗ Пароль пользователя не установлен
+log_keymgr_encrypt_fail=✗ Ошибка шифрования ключей
+log_keymgr_decrypt_fail=✗ Ошибка расшифровки ключей. Неверный пароль или повреждённый файл.

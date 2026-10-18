@@ -1,0 +1,548 @@
+# ============================================================
+# RUBIC-A — Português (pt-BR)
+# ============================================================
+# Formato: chave=valor
+# Comentários: linhas que começam com #
+# Placeholders: {0}, {1}, ...
+# ATENÇÃO: espaços no final do valor são significativos
+#          (prompts terminam com espaço antes da entrada)
+# ============================================================
+
+# ------------------------------------------------------------
+# GENÉRICOS
+# ------------------------------------------------------------
+press_enter=Pressione Enter para continuar...
+press_enter_short=Pressione Enter...
+back=Voltar
+cancel=Cancelar
+yes_no_hint=(s/N)
+yes_no_hint_alt=(S/n)
+continue_prompt=Continuar? 
+confirm_continue=Continuar? 
+error_unknown=Erro desconhecido
+error_invalid_input=Entrada inválida
+error_invalid_selection=Seleção inválida
+error_cancelled=Operação cancelada
+
+# ------------------------------------------------------------
+# LOGIN / CONTA
+# ------------------------------------------------------------
+login_title=ENTRAR
+login_user_prompt=Usuário: 
+login_password_prompt=Senha: 
+login_ok=Bem-vindo, {0}
+login_fail=Credenciais inválidas
+login_user_not_found=Usuário não encontrado
+login_wrong_password=Senha incorreta
+login_hardware_mismatch=Credenciais ou hardware inválidos
+login_throttled=Bloqueado. Aguarde {0} segundos.
+login_throttled_long=Bloqueado temporariamente por excesso de tentativas falhas
+
+register_title=CRIAR CONTA
+register_user_prompt=Usuário: 
+register_confirm_prompt=Confirmar: 
+register_pw_mismatch=✗ Não coincidem ({0}/3)
+register_pw_too_short=X Mínimo 8 caracteres
+register_ok=✓ Conta criada com sucesso
+register_id_generated=✓ Identidade digital gerada automaticamente
+register_id_generating=Gerando identidade digital Dilithium-6x5-AES-r3 automaticamente...
+register_id_fail=⚠ Aviso: Não foi possível gerar a identidade digital automaticamente
+register_id_fail_hint=Você pode gerá-la depois no menu de configurações
+register_argon=Gerando credenciais com ARGON2 e vinculando ao hardware...
+register_identity_linked=✓ Identidade digital vinculada ao sistema
+
+logout_msg=Saindo...
+exit_msg=Saindo...
+
+# ------------------------------------------------------------
+# MENU PRINCIPAL
+# ------------------------------------------------------------
+main_menu_title=MENU PRINCIPAL - {0}
+main_menu_tools=---FERRAMENTAS DE CRIPTOGRAFIA//
+main_menu_security=---GERENCIAMENTO DE SEGURANÇA//
+main_menu_share=---COMPARTILHAR ARQUIVOS//
+main_menu_admin=---ADMINISTRAÇÃO E SESSÃO//
+main_menu_encrypt_unit=[1] Criptografar Unidade
+main_menu_universal=[2] Cifrador Universal
+main_menu_keys=[3] Gerenciador de Chaves
+main_menu_share_files=[4] Compartilhar Arquivos
+main_menu_config=[5] Configurações
+main_menu_logout=[6] Encerrar Sessão
+main_menu_exit=[0] Sair do Sistema
+main_menu_prompt=Opção [0-6]: 
+
+# ------------------------------------------------------------
+# CONFIGURAÇÕES (núcleo)
+# ------------------------------------------------------------
+config_title=CONFIGURAÇÕES
+config_change_pwd=[1] Alterar senha
+config_user_info=[2] Informações do usuário
+config_gen_identity=[3] Gerar identidade digital
+config_lang=[4] Idioma / Language ({0})
+config_back=[5] Voltar
+config_prompt=Opção [1-5]: 
+
+config_lang_title=Idiomas disponíveis:
+config_lang_current=(atual)
+config_lang_select=Selecione: 
+config_lang_changed=✓ Idioma alterado para {0}
+config_lang_save_fail=✗ Não foi possível salvar a alteração
+config_lang_none=✗ Nenhum arquivo .lang em translations/
+
+# ------------------------------------------------------------
+# INFORMAÇÕES DO USUÁRIO
+# ------------------------------------------------------------
+userinfo_title=INFORMAÇÕES DO USUÁRIO
+userinfo_user=Usuário: 
+userinfo_algo=Algoritmo: 
+userinfo_created=Criado: 
+userinfo_identity=Identidade: 
+userinfo_identity_active=✓ ATIVA
+userinfo_identity_pending=✗ PENDENTE
+userinfo_fingerprint=Impressão digital: 
+userinfo_load_error=✗ Erro: Não foi possível carregar as informações do usuário
+
+# ------------------------------------------------------------
+# ALTERAR SENHA
+# ------------------------------------------------------------
+chpwd_title=ALTERAR SENHA
+chpwd_current=Senha atual: 
+chpwd_new=Senha: 
+chpwd_confirm=Confirmar: 
+chpwd_ok=✓ Senha alterada
+chpwd_fail=✗ {0}
+
+# ------------------------------------------------------------
+# IDENTIDADE DIGITAL
+# ------------------------------------------------------------
+ident_title=GERAR IDENTIDADE DIGITAL
+ident_generating=Gerando chave Dilithium-6x5-AES-r3 (PQC)...
+ident_ok=✓ Identidade gerada com sucesso
+ident_fingerprint=Impressão digital: 
+ident_fail=✗ {0}
+
+# ------------------------------------------------------------
+# GERENCIADOR DE CHAVES
+# ------------------------------------------------------------
+keymgr_title=GERENCIADOR DE CHAVES AES-256
+keymgr_user=Usuário: 
+keymgr_count=Chaves armazenadas: 
+keymgr_protection=Proteção: Argon2id + AES-256-GCM
+
+keymgr_menu_create=[1] Criar nova chave AES-256
+keymgr_menu_toggle=[2] Ativar/Desativar chave
+keymgr_menu_list=[3] Lista de chaves
+keymgr_menu_delete=[4] Excluir chave
+keymgr_menu_back=[5] Voltar
+keymgr_menu_prompt=Selecione a opção [1-5]: 
+
+keymgr_create_title=CRIAR NOVA CHAVE AES-256
+keymgr_create_name_section=NOME DA CHAVE
+keymgr_create_name_prompt=Nome para identificar a chave: 
+keymgr_create_name_empty=✗ O nome da chave não pode estar vazio
+keymgr_create_name_exists=✗ Já existe uma chave com esse nome
+keymgr_create_usage_section=USO DA CHAVE
+keymgr_create_usage_prompt=Para que você usará esta chave: 
+keymgr_create_usage_default=Criptografia de unidades / Cifrador universal
+keymgr_create_access_section=CÓDIGO DE ACESSO
+keymgr_create_access_hint=Defina um código de acesso para esta chave.
+keymgr_create_access_prompt=Código de acesso: 
+keymgr_create_access_confirm=Confirmar código de acesso: 
+keymgr_create_access_empty=✗ O código de acesso não pode estar vazio
+keymgr_create_generating=Gerando chave AES-256...
+keymgr_create_ok=✓ Chave gerada com sucesso
+keymgr_create_created=CHAVE CRIADA COM SUCESSO
+keymgr_create_info_name=Nome: 
+keymgr_create_info_type=Tipo: AES-256 (256 bits)
+keymgr_create_info_usage=Uso: 
+keymgr_create_info_state=Estado: 
+keymgr_create_state_inactive=INATIVA
+
+keymgr_toggle_title=ATIVAR/DESATIVAR CHAVE
+keymgr_toggle_no_keys=Nenhuma chave armazenada.
+keymgr_toggle_select=SELECIONAR CHAVE
+keymgr_toggle_select_prompt=Selecione o número da chave: 
+keymgr_toggle_deactivate_prompt=Desativar a chave "{0}"? 
+keymgr_toggle_activate_prompt=Ativar a chave "{0}"? 
+keymgr_toggle_access_prompt=Código de acesso para "{0}": 
+keymgr_toggle_ok_deactivate=✓ Chave desativada
+keymgr_toggle_ok_activate=✓ Chave ativada
+keymgr_toggle_activated_name=Nome: 
+keymgr_toggle_activated_state=Estado: 
+keymgr_toggle_state_active=ATIVA
+
+keymgr_list_title=LISTA DE CHAVES AES-256
+keymgr_list_empty=Nenhuma chave armazenada.
+keymgr_list_count=Chaves armazenadas ({0}):
+keymgr_list_summary=Total: {0} chaves | Ativas: {1} | Inativas: {2}
+keymgr_list_status_inactive=(INATIVA)
+
+keymgr_delete_title=EXCLUIR CHAVE
+keymgr_delete_empty=Nenhuma chave para excluir.
+keymgr_delete_select=SELECIONAR CHAVE PARA EXCLUIR
+keymgr_delete_prompt=Selecione o número da chave para excluir: 
+keymgr_delete_warning=⚠ AVISO: Esta ação não pode ser desfeita.
+keymgr_delete_confirm=Tem certeza que deseja excluir a chave "{0}"? 
+keymgr_delete_access_prompt=Código de acesso para confirmar: 
+keymgr_delete_ok=✓ Chave excluída
+
+keymgr_keyinfo_type=Tipo: 
+keymgr_keyinfo_usage=Uso: 
+keymgr_keyinfo_created=Criada: 
+keymgr_keyinfo_last_used=Último uso: 
+keymgr_keyinfo_state=Estado: 
+
+keymgr_verify_title=VERIFICAÇÃO DE SEGURANÇA
+keymgr_verify_prompt=Digite sua senha: 
+keymgr_verify_empty=✗ Senha vazia
+keymgr_verify_fail=✗ Senha incorreta. Acesso negado.
+keymgr_verify_ok=✓ Acesso concedido.
+
+# ------------------------------------------------------------
+# CIFRADOR UNIVERSAL
+# ------------------------------------------------------------
+univ_title=CIFRADOR UNIVERSAL
+univ_menu_title=MENU PRINCIPAL
+univ_menu_encrypt=[1] Criptografar arquivo/pasta
+univ_menu_decrypt=[2] Descriptografar arquivo/pasta
+univ_menu_config=[3] Configurações
+univ_menu_exit=[0] Sair
+univ_menu_prompt=Selecione a opção [0-3]: 
+
+univ_keys_title=CHAVES DISPONÍVEIS
+univ_keys_active=CHAVES ATIVAS:
+univ_keys_cancel=[0] Cancelar
+univ_keys_prompt=Selecione [0-{0}]: 
+univ_keys_none=Nenhuma chave ativa disponível.
+univ_keys_no_manager=✗ Gerenciador de chaves indisponível
+univ_keys_invalid=✗ Seleção inválida
+
+univ_activation_prompt=Código de ativação: 
+univ_activation_fail=✗ Código de ativação incorreto
+
+univ_path_prompt=Caminho: 
+univ_ok=✓ Operação concluída
+
+univ_stats_title=ESTATÍSTICAS
+univ_stats_files=Arquivos: 
+univ_stats_success=Bem-sucedidos: 
+univ_stats_fail=Falhados: 
+univ_stats_time=Tempo: 
+
+univ_config_title=CONFIGURAÇÕES
+univ_config_current=CONFIGURAÇÕES ATUAIS:
+univ_config_threads_system=Threads do sistema: 
+univ_config_threads_crypto=→ Criptografia: 
+univ_config_threads_io=→ E/S: 
+univ_config_threads_reserved=→ Reservados ao SO: 
+univ_config_buffer=Buffer: 
+univ_config_retries=Tentativas: 
+univ_config_mmap=mmap (> {0}MB): 
+univ_config_parallel=Arquivos paralelos: 
+univ_config_hmac=HMAC do cabeçalho: 
+univ_config_yes=✓
+univ_config_no=✗
+univ_config_yes_full=Sim
+univ_config_no_full=Não
+
+univ_config_buf_max=[1] Buffer máximo ({0} MB)
+univ_config_rate=[2] Limite de taxa ({0} MB/s)
+univ_config_hmac_toggle=[3] HMAC do cabeçalho ({0})
+univ_config_parallel_toggle=[4] Arquivos paralelos ({0})
+univ_config_retries_toggle=[5] Tentativas ({0})
+univ_config_clear_counters=[6] Limpar contadores
+univ_config_back=[0] Voltar
+univ_config_prompt=Selecione [0-6]: 
+
+univ_config_buf_prompt=MB (2-32): 
+univ_config_rate_prompt=MB/s (10-1000): 
+univ_config_parallel_prompt=Número (1-16): 
+univ_config_retries_prompt=Número (0-5): 
+univ_config_clear_prompt=Excluir todos os contadores? 
+univ_config_cleared=⚠ Contadores excluídos (reinicie o aplicativo para recriá-los)
+
+# ------------------------------------------------------------
+# CIFRADOR DE UNIDADES
+# ------------------------------------------------------------
+unit_title=CIFRADOR DE UNIDADES
+unit_mode_custom=Modo personalizado ativo
+unit_units_title=UNIDADES DETECTADAS:
+unit_units_none=Nenhuma unidade detectada
+unit_units_system=SISTEMA
+unit_units_encrypted=CRIPTOGRAFADA
+unit_units_normal=NORMAL
+unit_units_mounted_flag=(M)
+unit_units_backup_flag=[B]
+
+unit_menu_select=[1-{0}] Selecionar unidade
+unit_menu_config=[C] Configurações
+unit_menu_refresh=[R] Atualizar
+unit_menu_exit=[0] Sair
+unit_menu_prompt=Selecione [0-{0},C,R]: 
+
+unit_detail_size=Tamanho: 
+unit_detail_type=Tipo: 
+unit_detail_state=Estado: 
+unit_detail_backup=Backup disponível
+unit_detail_mounted=Montada em: 
+unit_detail_system=⚠ DISCO DO SISTEMA - OPERAÇÕES RESTRITAS
+
+unit_action_encrypt=[1] Criptografar unidade
+unit_action_decrypt=[1] Descriptografar unidade
+unit_action_mount=[2] Montar unidade
+unit_action_unmount=[3] Desmontar unidade
+unit_action_format=[4] Formatar unidade
+unit_action_restore=[5] Restaurar cabeçalho do backup
+unit_action_back=[0] Voltar
+unit_action_prompt=Selecione [0-5]: 
+
+unit_mount_prompt=Ponto de montagem [{0}]: 
+unit_mount_already=Já montada em {0}
+unit_mount_not=A unidade não está montada
+
+unit_process_title_cifrar=CRIPTOGRAFAR
+unit_process_title_descifrar=DESCRIPTOGRAFAR
+unit_process_confirm_prompt=Digite '{0}': 
+unit_process_keyword_encrypt=CRIPTOGRAFAR
+unit_process_keyword_decrypt=DESCRIPTOGRAFAR
+unit_process_root_warning=⚠ Esta operação requer privilégios de root.
+unit_process_root_hint1=Será solicitada a senha do sudo.
+unit_process_root_hint2=Ao terminar, você voltará automaticamente ao usuário normal.
+unit_process_unmount_prompt=Desmontar? 
+unit_process_mount_after=Montar a unidade descriptografada? 
+
+unit_stats_title=ESTATÍSTICAS
+unit_stats_total=Total: 
+unit_stats_time=Tempo: 
+unit_stats_speed=Velocidade: 
+unit_stats_peak=pico: 
+
+unit_format_title=FORMATAR UNIDADE
+unit_format_warn_encrypted=⚠ A unidade está marcada como CRIPTOGRAFADA
+unit_format_clean=[1] Limpar apenas o cabeçalho (remover marca)
+unit_format_fs_title=SISTEMA DE ARQUIVOS:
+unit_format_fat32=[2] FAT32 (USB, compatível)
+unit_format_ntfs=[3] NTFS (Windows)
+unit_format_ext4=[4] ext4 (Linux)
+unit_format_exfat=[5] exFAT (arquivos grandes)
+unit_format_cancel=[0] Cancelar
+unit_format_prompt=Selecione a opção [0-5]: 
+unit_format_clean_ok=✓ Unidade marcada como NÃO CRIPTOGRAFADA
+unit_format_ok=✓ Unidade formatada e marcada como NÃO CRIPTOGRAFADA
+
+unit_format_quick_warn=⚠ FORMATAÇÃO RÁPIDA
+unit_format_quick_unit=Unidade: 
+unit_format_quick_size=Tamanho: 
+unit_format_quick_type=Formato: 
+unit_format_quick_confirm=Digite 'FORMATAR' para confirmar: 
+unit_format_quick_keyword=FORMATAR
+unit_format_quick_cancelled=Cancelado.
+unit_format_quick_formatting=Formatando...
+
+unit_config_title=CONFIGURAÇÕES
+unit_config_default=CONFIGURAÇÕES PADRÃO:
+unit_config_cores=Núcleos: 
+unit_config_io_threads=Threads de E/S: 
+unit_config_crypto_threads=Threads de criptografia: 
+unit_config_reserved_os=Reservados ao SO: 
+unit_config_custom=Configurações personalizadas:
+unit_config_buffer=Buffer: 
+unit_config_direct_io=E/S direta: 
+unit_config_custom_mode=Modo personalizado: 
+unit_config_inactive=Modo personalizado: INATIVO
+unit_config_activated=Ativado
+unit_config_deactivated=Desativado
+unit_config_yes=Sim
+unit_config_no=Não
+
+unit_config_menu_custom=[1] Configurações personalizadas
+unit_config_menu_toggle=[2] Alternar modo personalizado
+unit_config_menu_back=[0] Voltar
+unit_config_menu_prompt=Selecione a opção [0-2]: 
+
+unit_config_custom_title=CONFIGURAÇÕES PERSONALIZADAS
+unit_config_custom_buffer=Tamanho do buffer (MB) [{0}]: 
+unit_config_custom_io=Threads de E/S [{0}]: 
+unit_config_custom_crypto=Threads de criptografia [{0}]: 
+unit_config_custom_direct=Usar E/S direta (s/n) [{0}]: 
+unit_config_custom_mode_prompt=Ativar modo personalizado (s/n) [{0}]: 
+unit_config_saved=✓ Configurações salvas em rubic_config.cfg
+unit_config_mode_on=✓ Modo personalizado ativado
+unit_config_mode_off=✓ Modo personalizado desativado
+
+unit_no_key=Não foi possível obter a chave mestra
+unit_no_key_short=Não foi possível obter a chave
+
+# ------------------------------------------------------------
+# COMPARTILHAR ARQUIVOS
+# ------------------------------------------------------------
+share_title=COMPARTILHAR ARQUIVOS
+share_send=[1] Enviar arquivos
+share_recv=[2] Receber arquivos
+share_trust=[3] Gerenciar identidades confiáveis 
+share_net=[4] Configurações de rede
+share_back=[5] Voltar
+share_prompt=Opção: 
+
+share_send_title=ENVIAR ARQUIVOS
+share_send_format=Formato: IP:PORTA (padrão :{0})
+share_send_addr_prompt=Endereço de destino: 
+share_send_addr_invalid=✗ Endereço inválido. Formato: IP:PORTA
+share_send_path_prompt=Caminho do arquivo/pasta: 
+share_send_no_files=✗ Nenhum arquivo encontrado
+share_send_files_info=Arquivos: {0} | Total: {1} MB
+share_send_confirm=Continuar? 
+share_send_sending=Enviando {0} arquivos...
+share_send_ok=✓ Envio concluído
+share_send_fail=✗ Envio falhou
+share_send_enter=Pressione Enter...
+
+share_recv_title=RECEBER ARQUIVOS
+share_recv_start_fail=✗ Não foi possível iniciar o servidor de recebimento
+share_recv_waiting=✓ Aguardando em {0}:{1}
+share_recv_your_id=✓ Seu ID: 
+share_recv_folder=Pasta de recebimento: 
+share_recv_stop_hint=[Digite 'q' e pressione ENTER para parar o recebimento]
+share_recv_stopped=✓ Recebimento interrompido
+share_recv_enter=Pressione Enter para voltar...
+
+share_trust_title=IMPRESSÕES DE CONFIANÇA (TOFU)
+share_trust_empty=Nenhuma identidade registrada.
+share_trust_add_prompt=Inserir uma impressão digital manualmente? 
+share_trust_fp_prompt=Impressão digital: 
+share_trust_saved=Impressão digital salva
+share_trust_save_fail=✗ Não foi possível salvar a impressão digital
+
+share_net_current_ip=IP atual: 
+share_net_kem_port=Porta de troca (KEM): 
+share_net_xfer_port=Porta de transferência: 
+share_net_change_prompt=Alterar as portas? 
+share_net_kem_new=Nova porta de troca: 
+share_net_xfer_new=Nova porta de transferência: 
+share_net_updated=✓ Portas atualizadas
+share_net_invalid=✗ Porta inválida
+
+# ------------------------------------------------------------
+# TOFU / ALERTAS DE SEGURANÇA
+# ------------------------------------------------------------
+tofu_title=⚠ ALERTA DE SEGURANÇA (TOFU) ⚠
+tofu_new_incoming=Foi detectada uma conexão de entrada de uma identidade nova ou não verificada.
+tofu_new_outgoing=Você está se conectando a uma identidade nova ou não verificada.
+tofu_user=Usuário: 
+tofu_fingerprint=Impressão digital:  
+tofu_prompt=Confiar nesta identidade, continuar mesmo assim e salvar para o futuro? 
+tofu_accepted=✓ Identidade salva como confiável. Continuando...
+tofu_rejected=✗ Conexão cancelada.
+
+mitm_title=⚠⚠⚠ ALERTA DE SEGURANÇA! ⚠⚠⚠
+mitm_detail=Possível ataque MITM detectado contra: {0}
+mitm_abort=A assinatura Dilithium do remoto é INVÁLIDA. Conexão abortada.
+
+# ------------------------------------------------------------
+# EVENTOS — SHARE MANAGER
+# ------------------------------------------------------------
+log_share_connecting=  Conectando a {0}...
+log_share_connect_failed=  ✗ Falha na conexão: {0}
+log_share_exchange_failed=  ✗ Falha na troca de chaves com {0}
+log_share_session_established=  ✓ Sessão segura: {0}
+log_share_receiving_from=  Recebendo de {0}...
+log_share_server_start_failed=  ✗ Não foi possível iniciar os servidores
+log_share_kyber_gen_failed=  ✗ Não foi possível gerar as chaves Kyber
+log_share_server_started=  ✓ Servidores iniciados
+log_share_server_stopped=  ✓ Servidores interrompidos
+log_share_no_files=  ⚠ Nenhum arquivo para enviar
+log_share_sending_files=  Enviando {0} arquivos...
+log_share_send_complete=  ✓ Envio concluído ({0})
+log_share_send_failed=  ✗ Envio falhou para {0}
+log_share_identity_load_error=  ✗ Erro ao carregar a identidade Dilithium
+log_share_trust_accepted=  ✓ Identidade {0} marcada como confiável
+log_share_trust_rejected=  ✗ Identidade {0} rejeitada
+
+# ------------------------------------------------------------
+# EVENTOS — UNIT ENCRYPTOR
+# ------------------------------------------------------------
+log_unit_header_writing=  Escrevendo cabeçalho...
+log_unit_header_written=  ✓ Cabeçalho escrito
+log_unit_header_read_failed=  ⚠ Cabeçalho ilegível: {0}
+log_unit_header_verified=  ✓ {0}
+log_unit_header_removed=  ✓ Cabeçalho removido
+log_unit_header_restoring=  Restaurando cabeçalho...
+log_unit_header_restored=  ✓ Cabeçalho restaurado
+log_unit_header_restore_failed=  ✗ Erro ao restaurar cabeçalho
+log_unit_header_clean_failed=  ✗ Erro ao limpar cabeçalho
+log_unit_backup_saved=  ✓ Backup salvo
+log_unit_backup_save_failed=  ⚠ Não foi possível salvar o backup
+log_unit_backup_loaded=  ✓ Cabeçalho recuperado do backup
+log_unit_backup_load_failed=  ✗ Não foi possível carregar o backup
+log_unit_backup_removed=  ✓ Backup removido
+log_unit_salt_generating=  Gerando salt KDF...
+log_unit_salt_generated=  ✓ Salt gerado
+log_unit_salt_error=  ✗ Erro ao gerar salt KDF
+log_unit_key_deriving=  Derivando chave...
+log_unit_key_derived=  ✓ Chave derivada
+log_unit_key_derive_error=  ✗ Erro ao derivar chave
+log_unit_hmac_calc=  Calculando HMAC...
+log_unit_hmac_verify=  Verificando HMAC...
+log_unit_hmac_error=  ✗ Erro HMAC: {0}
+log_unit_hmac_verified=  ✓ HMAC verificado
+log_unit_hmac_failed=  ✗ Falha na autenticação HMAC
+log_unit_sys_disk_blocked=  ⚠ NÃO É POSSÍVEL CRIPTOGRAFAR O DISCO DO SISTEMA
+log_unit_already_encrypted=  A unidade já está criptografada
+log_unit_not_encrypted=  A unidade não está criptografada
+log_unit_mounted=  ⚠ A unidade está montada em {0}
+log_unit_master_key_invalid=  Não foi possível obter a chave mestra: {0}
+log_unit_device_open_failed=  Não é possível abrir o dispositivo: {0}
+log_unit_device_open_retry=  Tentando novamente {0}...
+log_unit_device_size_failed=  Erro ao obter o tamanho: {0}
+log_unit_device_type=  Tipo detectado: {0}
+log_unit_config_auto=  Modo: AUTOMÁTICO ({0})
+log_unit_config_custom=  Modo: PERSONALIZADO ({0})
+log_unit_chunk_size=  Bloco: {0} MB
+log_unit_io_direct=  Modo de E/S: DIRETO
+log_unit_io_normal=  Modo de E/S: NORMAL
+log_unit_data_size=  Dados a processar: {0}
+log_unit_chunk_count=  Processando {0} blocos...
+log_unit_processing=  Processando...
+log_unit_processing_complete=  ✓ Processamento concluído
+log_unit_processing_failed=  ✗ Erro durante o processamento
+log_unit_processing_stopped=  ⚠ Processamento interrompido
+log_unit_chunk_read_error=  ✗ Erro de leitura no bloco {0}
+log_unit_chunk_process_error=  ✗ Erro ao processar o bloco {0}
+log_unit_chunk_write_error=  ✗ Erro de escrita no bloco {0}
+log_unit_mounting=  Montando em {0}...
+log_unit_mounted_ok=  ✓ Montada em {0}
+log_unit_mount_failed=  ✗ Erro de montagem (código: {0})
+log_unit_unmounting=  Desmontando {0}...
+log_unit_unmounted=  ✓ Desmontada
+log_unit_unmount_failed=  ✗ Não foi possível desmontar
+log_unit_cleanup_header=  Removendo cabeçalho...
+log_unit_cleanup_backup=  Removendo backup...
+log_unit_format_start=  Formatando {0}...
+log_unit_format_ok=  ✓ Formatada com sucesso
+log_unit_format_failed=  ✗ Erro ao formatar (código: {0})
+
+# ------------------------------------------------------------
+# EVENTOS — UNIVERSAL CIPHER
+# ------------------------------------------------------------
+log_univ_path_invalid=✗ Caminho inválido: {0}
+log_univ_no_files=⚠ Nenhum arquivo
+log_univ_no_files_process=⚠ Nenhum arquivo para processar
+log_univ_processing_single=Processando...
+log_univ_file_done=  ✓ Concluído
+log_univ_file_error=  ✗ Erro
+log_univ_file_move_error=  ✗ Erro ao mover o arquivo
+log_univ_no_keymgr=✗ Gerenciador de chaves indisponível
+log_univ_key_not_found=✗ Chave não encontrada: {0}
+log_univ_key_not_active=✗ A chave '{0}' não está ativa
+log_univ_key_value_error=✗ Não foi possível obter o valor da chave
+log_univ_key_length_error=✗ Comprimento de chave inválido
+
+# ------------------------------------------------------------
+# EVENTOS — KEY MANAGER
+# ------------------------------------------------------------
+log_keymgr_usersdir_fail=✗ Não foi possível criar o diretório de usuários
+log_keymgr_file_create_fail=✗ Não foi possível criar o arquivo de chaves
+log_keymgr_file_open_fail=✗ Não foi possível abrir o arquivo de chaves
+log_keymgr_pwd_not_set=✗ Senha do usuário não definida
+log_keymgr_encrypt_fail=✗ Erro ao criptografar as chaves
+log_keymgr_decrypt_fail=✗ Erro ao descriptografar as chaves. Senha incorreta ou arquivo corrompido.

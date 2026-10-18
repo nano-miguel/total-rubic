@@ -1,0 +1,548 @@
+# ============================================================
+# RUBIC-A — 日本語 (ja)
+# ============================================================
+# 形式：キー=値
+# コメント：# で始まる行
+# プレースホルダー：{0}, {1}, ...
+# 注意：値の末尾の空白は意味があります
+#       （入力プロンプトの前の空白）
+# ============================================================
+
+# ------------------------------------------------------------
+# 一般
+# ------------------------------------------------------------
+press_enter=続けるには Enter キーを押してください...
+press_enter_short=Enter キーを押してください...
+back=戻る
+cancel=キャンセル
+yes_no_hint=(はい/いいえ)
+yes_no_hint_alt=(Y/N)
+continue_prompt=続行しますか？
+confirm_continue=続行しますか？
+error_unknown=不明なエラー
+error_invalid_input=無効な入力
+error_invalid_selection=無効な選択
+error_cancelled=操作をキャンセルしました
+
+# ------------------------------------------------------------
+# ログイン / アカウント
+# ------------------------------------------------------------
+login_title=ログイン
+login_user_prompt=ユーザー名：
+login_password_prompt=パスワード：
+login_ok=ようこそ、{0}
+login_fail=認証情報が無効です
+login_user_not_found=ユーザーが見つかりません
+login_wrong_password=パスワードが間違っています
+login_hardware_mismatch=認証情報またはハードウェアが無効です
+login_throttled=ロックされています。{0} 秒お待ちください。
+login_throttled_long=失敗が多すぎるため、一時的にロックされています
+
+register_title=アカウント作成
+register_user_prompt=ユーザー名：
+register_confirm_prompt=確認：
+register_pw_mismatch=✗ 一致しません ({0}/3)
+register_pw_too_short=X 最低 8 文字
+register_ok=✓ アカウントが正常に作成されました
+register_id_generated=✓ デジタル ID が自動生成されました
+register_id_generating=Dilithium-6x5-AES-r3 デジタル ID を自動生成しています...
+register_id_fail=⚠ 警告：デジタル ID を自動生成できませんでした
+register_id_fail_hint=後で設定メニューから生成できます
+register_argon=ARGON2 認証情報を生成し、ハードウェアにバインドしています...
+register_identity_linked=✓ デジタル ID がシステムにリンクされました
+
+logout_msg=ログアウトしています...
+exit_msg=終了しています...
+
+# ------------------------------------------------------------
+# メインメニュー
+# ------------------------------------------------------------
+main_menu_title=メインメニュー - {0}
+main_menu_tools=---暗号化ツール//
+main_menu_security=---セキュリティ管理//
+main_menu_share=---ファイル共有//
+main_menu_admin=---管理とセッション//
+main_menu_encrypt_unit=[1] ドライブを暗号化
+main_menu_universal=[2] ユニバーサル暗号化
+main_menu_keys=[3] キーマネージャー
+main_menu_share_files=[4] ファイルを共有
+main_menu_config=[5] 設定
+main_menu_logout=[6] ログアウト
+main_menu_exit=[0] 終了
+main_menu_prompt=オプション [0-6]：
+
+# ------------------------------------------------------------
+# 設定（コア）
+# ------------------------------------------------------------
+config_title=設定
+config_change_pwd=[1] パスワードを変更
+config_user_info=[2] ユーザー情報
+config_gen_identity=[3] デジタル ID を生成
+config_lang=[4] 言語 / Language ({0})
+config_back=[5] 戻る
+config_prompt=オプション [1-5]：
+
+config_lang_title=利用可能な言語：
+config_lang_current=(現在)
+config_lang_select=選択してください：
+config_lang_changed=✓ 言語を {0} に変更しました
+config_lang_save_fail=✗ 変更を保存できませんでした
+config_lang_none=✗ translations/ に .lang ファイルがありません
+
+# ------------------------------------------------------------
+# ユーザー情報
+# ------------------------------------------------------------
+userinfo_title=ユーザー情報
+userinfo_user=ユーザー：
+userinfo_algo=アルゴリズム：
+userinfo_created=作成日：
+userinfo_identity=ID：
+userinfo_identity_active=✓ 有効
+userinfo_identity_pending=✗ 保留中
+userinfo_fingerprint=フィンガープリント：
+userinfo_load_error=✗ エラー：ユーザー情報を読み込めませんでした
+
+# ------------------------------------------------------------
+# パスワード変更
+# ------------------------------------------------------------
+chpwd_title=パスワードを変更
+chpwd_current=現在のパスワード：
+chpwd_new=パスワード：
+chpwd_confirm=確認：
+chpwd_ok=✓ パスワードを変更しました
+chpwd_fail=✗ {0}
+
+# ------------------------------------------------------------
+# デジタル ID
+# ------------------------------------------------------------
+ident_title=デジタル ID を生成
+ident_generating=Dilithium-6x5-AES-r3 キーを生成しています (PQC)...
+ident_ok=✓ ID が正常に生成されました
+ident_fingerprint=フィンガープリント：
+ident_fail=✗ {0}
+
+# ------------------------------------------------------------
+# キーマネージャー
+# ------------------------------------------------------------
+keymgr_title=AES-256 キーマネージャー
+keymgr_user=ユーザー：
+keymgr_count=保存されたキー：
+keymgr_protection=保護：Argon2id + AES-256-GCM
+
+keymgr_menu_create=[1] 新しい AES-256 キーを作成
+keymgr_menu_toggle=[2] キーを有効化/無効化
+keymgr_menu_list=[3] キー一覧
+keymgr_menu_delete=[4] キーを削除
+keymgr_menu_back=[5] 戻る
+keymgr_menu_prompt=オプション [1-5] を選択してください：
+
+keymgr_create_title=新しい AES-256 キーを作成
+keymgr_create_name_section=キー名
+keymgr_create_name_prompt=キーを識別するための名前：
+keymgr_create_name_empty=✗ キー名は空にできません
+keymgr_create_name_exists=✗ 同じ名前のキーが既に存在します
+keymgr_create_usage_section=キーの用途
+keymgr_create_usage_prompt=このキーを何に使用しますか：
+keymgr_create_usage_default=ドライブ暗号化 / ユニバーサル暗号化
+keymgr_create_access_section=アクセスコード
+keymgr_create_access_hint=このキーのアクセスコードを設定してください。
+keymgr_create_access_prompt=アクセスコード：
+keymgr_create_access_confirm=アクセスコードを確認：
+keymgr_create_access_empty=✗ アクセスコードは空にできません
+keymgr_create_generating=AES-256 キーを生成しています...
+keymgr_create_ok=✓ キーが正常に生成されました
+keymgr_create_created=キーが正常に作成されました
+keymgr_create_info_name=名前：
+keymgr_create_info_type=種類：AES-256（256 ビット）
+keymgr_create_info_usage=用途：
+keymgr_create_info_state=状態：
+keymgr_create_state_inactive=無効
+
+keymgr_toggle_title=キーを有効化/無効化
+keymgr_toggle_no_keys=保存されたキーがありません。
+keymgr_toggle_select=キーを選択
+keymgr_toggle_select_prompt=キー番号を選択してください：
+keymgr_toggle_deactivate_prompt=キー "{0}" を無効化しますか？
+keymgr_toggle_activate_prompt=キー "{0}" を有効化しますか？
+keymgr_toggle_access_prompt="{0}" のアクセスコード：
+keymgr_toggle_ok_deactivate=✓ キーを無効化しました
+keymgr_toggle_ok_activate=✓ キーを有効化しました
+keymgr_toggle_activated_name=名前：
+keymgr_toggle_activated_state=状態：
+keymgr_toggle_state_active=有効
+
+keymgr_list_title=AES-256 キー一覧
+keymgr_list_empty=保存されたキーがありません。
+keymgr_list_count=保存されたキー ({0})：
+keymgr_list_summary=合計：{0} 個のキー | 有効：{1} | 無効：{2}
+keymgr_list_status_inactive=（無効）
+
+keymgr_delete_title=キーを削除
+keymgr_delete_empty=削除するキーがありません。
+keymgr_delete_select=削除するキーを選択
+keymgr_delete_prompt=削除するキー番号を選択してください：
+keymgr_delete_warning=⚠ 警告：この操作は元に戻せません。
+keymgr_delete_confirm=キー "{0}" を削除してもよろしいですか？
+keymgr_delete_access_prompt=確認のためのアクセスコード：
+keymgr_delete_ok=✓ キーを削除しました
+
+keymgr_keyinfo_type=種類：
+keymgr_keyinfo_usage=用途：
+keymgr_keyinfo_created=作成日：
+keymgr_keyinfo_last_used=最終使用：
+keymgr_keyinfo_state=状態：
+
+keymgr_verify_title=セキュリティ検証
+keymgr_verify_prompt=パスワードを入力してください：
+keymgr_verify_empty=✗ パスワードが空です
+keymgr_verify_fail=✗ パスワードが間違っています。アクセスが拒否されました。
+keymgr_verify_ok=✓ アクセスが許可されました。
+
+# ------------------------------------------------------------
+# ユニバーサル暗号化
+# ------------------------------------------------------------
+univ_title=ユニバーサル暗号化
+univ_menu_title=メインメニュー
+univ_menu_encrypt=[1] ファイル/フォルダを暗号化
+univ_menu_decrypt=[2] ファイル/フォルダを復号
+univ_menu_config=[3] 設定
+univ_menu_exit=[0] 終了
+univ_menu_prompt=オプション [0-3] を選択してください：
+
+univ_keys_title=利用可能なキー
+univ_keys_active=有効なキー：
+univ_keys_cancel=[0] キャンセル
+univ_keys_prompt=[0-{0}] を選択してください：
+univ_keys_none=有効なキーがありません。
+univ_keys_no_manager=✗ キーマネージャーが利用できません
+univ_keys_invalid=✗ 無効な選択
+
+univ_activation_prompt=アクティベーションコード：
+univ_activation_fail=✗ アクティベーションコードが間違っています
+
+univ_path_prompt=パス：
+univ_ok=✓ 操作が完了しました
+
+univ_stats_title=統計
+univ_stats_files=ファイル：
+univ_stats_success=成功：
+univ_stats_fail=失敗：
+univ_stats_time=時間：
+
+univ_config_title=設定
+univ_config_current=現在の設定：
+univ_config_threads_system=システムスレッド：
+univ_config_threads_crypto=→ 暗号化：
+univ_config_threads_io=→ I/O：
+univ_config_threads_reserved=→ OS 用予約：
+univ_config_buffer=バッファ：
+univ_config_retries=再試行：
+univ_config_mmap=mmap (> {0}MB)：
+univ_config_parallel=並列ファイル：
+univ_config_hmac=ヘッダー HMAC：
+univ_config_yes=✓
+univ_config_no=✗
+univ_config_yes_full=はい
+univ_config_no_full=いいえ
+
+univ_config_buf_max=[1] 最大バッファ（{0} MB）
+univ_config_rate=[2] レート制限（{0} MB/s）
+univ_config_hmac_toggle=[3] ヘッダー HMAC（{0}）
+univ_config_parallel_toggle=[4] 並列ファイル（{0}）
+univ_config_retries_toggle=[5] 再試行（{0}）
+univ_config_clear_counters=[6] カウンターをクリア
+univ_config_back=[0] 戻る
+univ_config_prompt=[0-6] を選択してください：
+
+univ_config_buf_prompt=MB（2-32）：
+univ_config_rate_prompt=MB/s（10-1000）：
+univ_config_parallel_prompt=数（1-16）：
+univ_config_retries_prompt=数（0-5）：
+univ_config_clear_prompt=すべてのカウンターを削除しますか？
+univ_config_cleared=⚠ カウンターを削除しました（アプリを再起動して再作成してください）
+
+# ------------------------------------------------------------
+# ドライブ暗号化
+# ------------------------------------------------------------
+unit_title=ドライブ暗号化
+unit_mode_custom=カスタムモードが有効です
+unit_units_title=検出されたドライブ：
+unit_units_none=ドライブが検出されませんでした
+unit_units_system=システム
+unit_units_encrypted=暗号化済み
+unit_units_normal=通常
+unit_units_mounted_flag=（マウント）
+unit_units_backup_flag=[バックアップ]
+
+unit_menu_select=[1-{0}] ドライブを選択
+unit_menu_config=[C] 設定
+unit_menu_refresh=[R] 更新
+unit_menu_exit=[0] 終了
+unit_menu_prompt=[0-{0},C,R] を選択してください：
+
+unit_detail_size=サイズ：
+unit_detail_type=種類：
+unit_detail_state=状態：
+unit_detail_backup=バックアップが利用可能
+unit_detail_mounted=マウント場所：
+unit_detail_system=⚠ システムドライブ - 操作が制限されています
+
+unit_action_encrypt=[1] ドライブを暗号化
+unit_action_decrypt=[1] ドライブを復号
+unit_action_mount=[2] ドライブをマウント
+unit_action_unmount=[3] ドライブをアンマウント
+unit_action_format=[4] ドライブをフォーマット
+unit_action_restore=[5] バックアップからヘッダーを復元
+unit_action_back=[0] 戻る
+unit_action_prompt=[0-5] を選択してください：
+
+unit_mount_prompt=マウントポイント [{0}]：
+unit_mount_already=既に {0} にマウントされています
+unit_mount_not=ドライブはマウントされていません
+
+unit_process_title_cifrar=暗号化
+unit_process_title_descifrar=復号
+unit_process_confirm_prompt='{0}' と入力してください：
+unit_process_keyword_encrypt=暗号化
+unit_process_keyword_decrypt=復号
+unit_process_root_warning=⚠ この操作には root 権限が必要です。
+unit_process_root_hint1=sudo パスワードが要求されます。
+unit_process_root_hint2=完了後、通常ユーザーに自動的に戻ります。
+unit_process_unmount_prompt=アンマウントしますか？
+unit_process_mount_after=復号されたドライブをマウントしますか？
+
+unit_stats_title=統計
+unit_stats_total=合計：
+unit_stats_time=時間：
+unit_stats_speed=速度：
+unit_stats_peak=ピーク：
+
+unit_format_title=ドライブをフォーマット
+unit_format_warn_encrypted=⚠ ドライブは暗号化済みとしてマークされています
+unit_format_clean=[1] ヘッダーのみクリア（マークを削除）
+unit_format_fs_title=ファイルシステム：
+unit_format_fat32=[2] FAT32（USB、互換）
+unit_format_ntfs=[3] NTFS（Windows）
+unit_format_ext4=[4] ext4（Linux）
+unit_format_exfat=[5] exFAT（大容量ファイル）
+unit_format_cancel=[0] キャンセル
+unit_format_prompt=オプション [0-5] を選択してください：
+unit_format_clean_ok=✓ ドライブを未暗号化としてマークしました
+unit_format_ok=✓ ドライブをフォーマットし、未暗号化としてマークしました
+
+unit_format_quick_warn=⚠ クイックフォーマット
+unit_format_quick_unit=ドライブ：
+unit_format_quick_size=サイズ：
+unit_format_quick_type=形式：
+unit_format_quick_confirm=確認のため 'FORMAT' と入力してください：
+unit_format_quick_keyword=FORMAT
+unit_format_quick_cancelled=キャンセルしました。
+unit_format_quick_formatting=フォーマットしています...
+
+unit_config_title=設定
+unit_config_default=デフォルト設定：
+unit_config_cores=コア数：
+unit_config_io_threads=I/O スレッド：
+unit_config_crypto_threads=暗号化スレッド：
+unit_config_reserved_os=OS 用予約：
+unit_config_custom=カスタム設定：
+unit_config_buffer=バッファ：
+unit_config_direct_io=ダイレクト I/O：
+unit_config_custom_mode=カスタムモード：
+unit_config_inactive=カスタムモード：無効
+unit_config_activated=有効
+unit_config_deactivated=無効
+unit_config_yes=はい
+unit_config_no=いいえ
+
+unit_config_menu_custom=[1] カスタム設定
+unit_config_menu_toggle=[2] カスタムモードを切り替え
+unit_config_menu_back=[0] 戻る
+unit_config_menu_prompt=オプション [0-2] を選択してください：
+
+unit_config_custom_title=カスタム設定
+unit_config_custom_buffer=バッファサイズ（MB）[{0}]：
+unit_config_custom_io=I/O スレッド [{0}]：
+unit_config_custom_crypto=暗号化スレッド [{0}]：
+unit_config_custom_direct=ダイレクト I/O を使用（はい/いいえ）[{0}]：
+unit_config_custom_mode_prompt=カスタムモードを有効化（はい/いいえ）[{0}]：
+unit_config_saved=✓ 設定を rubic_config.cfg に保存しました
+unit_config_mode_on=✓ カスタムモードを有効化しました
+unit_config_mode_off=✓ カスタムモードを無効化しました
+
+unit_no_key=マスターキーを取得できませんでした
+unit_no_key_short=キーを取得できませんでした
+
+# ------------------------------------------------------------
+# ファイル共有
+# ------------------------------------------------------------
+share_title=ファイル共有
+share_send=[1] ファイルを送信
+share_recv=[2] ファイルを受信
+share_trust=[3] 信頼済み ID の管理
+share_net=[4] ネットワーク設定
+share_back=[5] 戻る
+share_prompt=オプション：
+
+share_send_title=ファイルを送信
+share_send_format=形式：IP:ポート（デフォルト :{0}）
+share_send_addr_prompt=送信先アドレス：
+share_send_addr_invalid=✗ アドレスが無効です。形式：IP:ポート
+share_send_path_prompt=ファイル/フォルダのパス：
+share_send_no_files=✗ ファイルが見つかりません
+share_send_files_info=ファイル：{0} | 合計：{1} MB
+share_send_confirm=続行しますか？
+share_send_sending={0} 個のファイルを送信しています...
+share_send_ok=✓ 送信完了
+share_send_fail=✗ 送信に失敗しました
+share_send_enter=Enter キーを押してください...
+
+share_recv_title=ファイルを受信
+share_recv_start_fail=✗ 受信サーバーを起動できませんでした
+share_recv_waiting=✓ {0}:{1} で待機中
+share_recv_your_id=✓ あなたの ID：
+share_recv_folder=受信フォルダ：
+share_recv_stop_hint=[「q」と入力し ENTER を押すと受信を停止します]
+share_recv_stopped=✓ 受信を停止しました
+share_recv_enter=Enter キーを押して戻ります...
+
+share_trust_title=信頼済みフィンガープリント（TOFU）
+share_trust_empty=登録された ID がありません。
+share_trust_add_prompt=フィンガープリントを手動で入力しますか？
+share_trust_fp_prompt=フィンガープリント：
+share_trust_saved=フィンガープリントを保存しました
+share_trust_save_fail=✗ フィンガープリントを保存できませんでした
+
+share_net_current_ip=現在の IP：
+share_net_kem_port=交換ポート (KEM)：
+share_net_xfer_port=転送ポート：
+share_net_change_prompt=ポートを変更しますか？
+share_net_kem_new=新しい交換ポート：
+share_net_xfer_new=新しい転送ポート：
+share_net_updated=✓ ポートを更新しました
+share_net_invalid=✗ 無効なポート
+
+# ------------------------------------------------------------
+# TOFU / セキュリティ警告
+# ------------------------------------------------------------
+tofu_title=⚠ セキュリティ警告（TOFU）⚠
+tofu_new_incoming=新しいまたは未検証の ID からの受信接続が検出されました。
+tofu_new_outgoing=新しいまたは未検証の ID に接続しようとしています。
+tofu_user=ユーザー：
+tofu_fingerprint=フィンガープリント：
+tofu_prompt=この ID を信頼し、続行して将来のために保存しますか？
+tofu_accepted=✓ ID を信頼済みとして保存しました。続行します...
+tofu_rejected=✗ 接続をキャンセルしました。
+
+mitm_title=⚠⚠⚠ セキュリティ警告！⚠⚠⚠
+mitm_detail=以下に対する MITM 攻撃の可能性が検出されました：{0}
+mitm_abort=相手の Dilithium 署名が無効です。接続を中断しました。
+
+# ------------------------------------------------------------
+# イベント — SHARE MANAGER
+# ------------------------------------------------------------
+log_share_connecting=  {0} に接続しています...
+log_share_connect_failed=  ✗ 接続に失敗しました：{0}
+log_share_exchange_failed=  ✗ {0} との鍵交換に失敗しました
+log_share_session_established=  ✓ 安全なセッション：{0}
+log_share_receiving_from=  {0} から受信中...
+log_share_server_start_failed=  ✗ サーバーを起動できませんでした
+log_share_kyber_gen_failed=  ✗ Kyber 鍵を生成できませんでした
+log_share_server_started=  ✓ サーバーを起動しました
+log_share_server_stopped=  ✓ サーバーを停止しました
+log_share_no_files=  ⚠ 送信するファイルがありません
+log_share_sending_files=  {0} 個のファイルを送信しています...
+log_share_send_complete=  ✓ 送信完了（{0}）
+log_share_send_failed=  ✗ {0} への送信に失敗しました
+log_share_identity_load_error=  ✗ Dilithium ID の読み込みエラー
+log_share_trust_accepted=  ✓ ID {0} を信頼済みとしてマークしました
+log_share_trust_rejected=  ✗ ID {0} を拒否しました
+
+# ------------------------------------------------------------
+# イベント — UNIT ENCRYPTOR
+# ------------------------------------------------------------
+log_unit_header_writing=  ヘッダーを書き込んでいます...
+log_unit_header_written=  ✓ ヘッダーを書き込みました
+log_unit_header_read_failed=  ⚠ ヘッダーが読み込めません：{0}
+log_unit_header_verified=  ✓ {0}
+log_unit_header_removed=  ✓ ヘッダーを削除しました
+log_unit_header_restoring=  ヘッダーを復元しています...
+log_unit_header_restored=  ✓ ヘッダーを復元しました
+log_unit_header_restore_failed=  ✗ ヘッダーの復元エラー
+log_unit_header_clean_failed=  ✗ ヘッダーのクリーンアップエラー
+log_unit_backup_saved=  ✓ バックアップを保存しました
+log_unit_backup_save_failed=  ⚠ バックアップを保存できませんでした
+log_unit_backup_loaded=  ✓ バックアップからヘッダーを復元しました
+log_unit_backup_load_failed=  ✗ バックアップを読み込めませんでした
+log_unit_backup_removed=  ✓ バックアップを削除しました
+log_unit_salt_generating=  KDF ソルトを生成しています...
+log_unit_salt_generated=  ✓ ソルトを生成しました
+log_unit_salt_error=  ✗ KDF ソルトの生成エラー
+log_unit_key_deriving=  鍵を派生しています...
+log_unit_key_derived=  ✓ 鍵を派生しました
+log_unit_key_derive_error=  ✗ 鍵の派生エラー
+log_unit_hmac_calc=  HMAC を計算しています...
+log_unit_hmac_verify=  HMAC を検証しています...
+log_unit_hmac_error=  ✗ HMAC エラー：{0}
+log_unit_hmac_verified=  ✓ HMAC 検証完了
+log_unit_hmac_failed=  ✗ HMAC 認証に失敗しました
+log_unit_sys_disk_blocked=  ⚠ システムドライブは暗号化できません
+log_unit_already_encrypted=  ドライブは既に暗号化されています
+log_unit_not_encrypted=  ドライブは暗号化されていません
+log_unit_mounted=  ⚠ ドライブは {0} にマウントされています
+log_unit_master_key_invalid=  マスターキーを取得できませんでした：{0}
+log_unit_device_open_failed=  デバイスを開けません：{0}
+log_unit_device_open_retry=  再試行中 {0}...
+log_unit_device_size_failed=  サイズ取得エラー：{0}
+log_unit_device_type=  検出された種類：{0}
+log_unit_config_auto=  モード：自動（{0}）
+log_unit_config_custom=  モード：カスタム（{0}）
+log_unit_chunk_size=  チャンク：{0} MB
+log_unit_io_direct=  I/O モード：ダイレクト
+log_unit_io_normal=  I/O モード：通常
+log_unit_data_size=  処理するデータ：{0}
+log_unit_chunk_count=  {0} 個のチャンクを処理しています...
+log_unit_processing=  処理中...
+log_unit_processing_complete=  ✓ 処理が完了しました
+log_unit_processing_failed=  ✗ 処理中にエラーが発生しました
+log_unit_processing_stopped=  ⚠ 処理を停止しました
+log_unit_chunk_read_error=  ✗ チャンク {0} の読み込みエラー
+log_unit_chunk_process_error=  ✗ チャンク {0} の処理エラー
+log_unit_chunk_write_error=  ✗ チャンク {0} の書き込みエラー
+log_unit_mounting=  {0} にマウントしています...
+log_unit_mounted_ok=  ✓ {0} にマウントしました
+log_unit_mount_failed=  ✗ マウントエラー（コード：{0}）
+log_unit_unmounting=  {0} をアンマウントしています...
+log_unit_unmounted=  ✓ アンマウントしました
+log_unit_unmount_failed=  ✗ アンマウントできませんでした
+log_unit_cleanup_header=  ヘッダーを削除しています...
+log_unit_cleanup_backup=  バックアップを削除しています...
+log_unit_format_start=  {0} をフォーマットしています...
+log_unit_format_ok=  ✓ フォーマットに成功しました
+log_unit_format_failed=  ✗ フォーマットエラー（コード：{0}）
+
+# ------------------------------------------------------------
+# イベント — UNIVERSAL CIPHER
+# ------------------------------------------------------------
+log_univ_path_invalid=✗ 無効なパス：{0}
+log_univ_no_files=⚠ ファイルがありません
+log_univ_no_files_process=⚠ 処理するファイルがありません
+log_univ_processing_single=処理中...
+log_univ_file_done=  ✓ 完了
+log_univ_file_error=  ✗ エラー
+log_univ_file_move_error=  ✗ ファイルの移動エラー
+log_univ_no_keymgr=✗ キーマネージャーが利用できません
+log_univ_key_not_found=✗ キーが見つかりません：{0}
+log_univ_key_not_active=✗ キー '{0}' は有効ではありません
+log_univ_key_value_error=✗ キーの値を取得できませんでした
+log_univ_key_length_error=✗ キーの長さが無効です
+
+# ------------------------------------------------------------
+# イベント — KEY MANAGER
+# ------------------------------------------------------------
+log_keymgr_usersdir_fail=✗ ユーザーディレクトリを作成できません
+log_keymgr_file_create_fail=✗ キーファイルを作成できません
+log_keymgr_file_open_fail=✗ キーファイルを開けません
+log_keymgr_pwd_not_set=✗ ユーザーパスワードが設定されていません
+log_keymgr_encrypt_fail=✗ キーの暗号化エラー
+log_keymgr_decrypt_fail=✗ キーの復号エラー。パスワードが間違っているか、ファイルが破損しています。

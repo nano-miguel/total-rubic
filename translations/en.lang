@@ -1,0 +1,545 @@
+# ============================================================
+# RUBIC-A — English (en)
+# ============================================================
+# NOTE: This file may be incomplete during alpha. Missing keys
+#       fall back to the raw key name so you can spot gaps.
+# ============================================================
+
+# ------------------------------------------------------------
+# GENERIC
+# ------------------------------------------------------------
+press_enter=Press Enter to continue...
+press_enter_short=Press Enter...
+back=Back
+cancel=Cancel
+yes_no_hint=(y/N)
+yes_no_hint_alt=(Y/n)
+continue_prompt=Continue? 
+confirm_continue=Continue? 
+error_unknown=Unknown error
+error_invalid_input=Invalid input
+error_invalid_selection=Invalid selection
+error_cancelled=Operation cancelled
+
+# ------------------------------------------------------------
+# LOGIN / ACCOUNT
+# ------------------------------------------------------------
+login_title=SIGN IN
+login_user_prompt=Username: 
+login_password_prompt=Password: 
+login_ok=Welcome, {0}
+login_fail=Invalid credentials
+login_user_not_found=User not found
+login_wrong_password=Wrong password
+login_hardware_mismatch=Invalid credentials or hardware
+login_throttled=Locked. Wait {0} seconds.
+login_throttled_long=Temporarily locked due to too many failed attempts
+
+register_title=CREATE ACCOUNT
+register_user_prompt=Username: 
+register_confirm_prompt=Confirm: 
+register_pw_mismatch=✗ Passwords don't match ({0}/3)
+register_pw_too_short=X Minimum 8 characters
+register_ok=✓ Account created successfully
+register_id_generated=✓ Digital identity generated automatically
+register_id_generating=Generating Dilithium-6x5-AES-r3 digital identity automatically...
+register_id_fail=⚠ Warning: Could not generate digital identity automatically
+register_id_fail_hint=You can generate it later from the settings menu
+register_argon=Generating ARGON2 credentials and binding to Hardware...
+register_identity_linked=✓ Digital identity linked to the system
+
+logout_msg=Signing out...
+exit_msg=Exiting...
+
+# ------------------------------------------------------------
+# MAIN MENU
+# ------------------------------------------------------------
+main_menu_title=MAIN MENU - {0}
+main_menu_tools=---ENCRYPTION TOOLS//
+main_menu_security=---SECURITY MANAGEMENT//
+main_menu_share=---FILE SHARING//
+main_menu_admin=---ADMINISTRATION & SESSION//
+main_menu_encrypt_unit=[1] Encrypt Drive
+main_menu_universal=[2] Universal Cipher
+main_menu_keys=[3] Key Manager
+main_menu_share_files=[4] Share Files
+main_menu_config=[5] Settings
+main_menu_logout=[6] Logout
+main_menu_exit=[0] Exit
+main_menu_prompt=Option [0-6]: 
+
+# ------------------------------------------------------------
+# SETTINGS (core)
+# ------------------------------------------------------------
+config_title=SETTINGS
+config_change_pwd=[1] Change password
+config_user_info=[2] User information
+config_gen_identity=[3] Generate digital identity
+config_lang=[4] Language / Idioma ({0})
+config_back=[5] Back
+config_prompt=Option [1-5]: 
+
+config_lang_title=Available languages:
+config_lang_current=(current)
+config_lang_select=Select: 
+config_lang_changed=✓ Language changed to {0}
+config_lang_save_fail=✗ Could not save the change
+config_lang_none=✗ No .lang files in translations/
+
+# ------------------------------------------------------------
+# USER INFO
+# ------------------------------------------------------------
+userinfo_title=USER INFORMATION
+userinfo_user=User: 
+userinfo_algo=Algorithm: 
+userinfo_created=Created: 
+userinfo_identity=Identity: 
+userinfo_identity_active=✓ ACTIVE
+userinfo_identity_pending=✗ PENDING
+userinfo_fingerprint=Fingerprint: 
+userinfo_load_error=✗ Error: Could not load user information
+
+# ------------------------------------------------------------
+# CHANGE PASSWORD
+# ------------------------------------------------------------
+chpwd_title=CHANGE PASSWORD
+chpwd_current=Current password: 
+chpwd_new=Password: 
+chpwd_confirm=Confirm: 
+chpwd_ok=✓ Password changed
+chpwd_fail=✗ {0}
+
+# ------------------------------------------------------------
+# DIGITAL IDENTITY
+# ------------------------------------------------------------
+ident_title=GENERATE DIGITAL IDENTITY
+ident_generating=Generating Dilithium-6x5-AES-r3 key (PQC)...
+ident_ok=✓ Identity generated successfully
+ident_fingerprint=Fingerprint: 
+ident_fail=✗ {0}
+
+# ------------------------------------------------------------
+# KEY MANAGER
+# ------------------------------------------------------------
+keymgr_title=AES-256 KEY MANAGER
+keymgr_user=User: 
+keymgr_count=Stored keys: 
+keymgr_protection=Protection: Argon2id + AES-256-GCM
+
+keymgr_menu_create=[1] Create new AES-256 key
+keymgr_menu_toggle=[2] Enable/Disable key
+keymgr_menu_list=[3] Key list
+keymgr_menu_delete=[4] Delete key
+keymgr_menu_back=[5] Back
+keymgr_menu_prompt=Select option [1-5]: 
+
+keymgr_create_title=CREATE NEW AES-256 KEY
+keymgr_create_name_section=KEY NAME
+keymgr_create_name_prompt=Name to identify the key: 
+keymgr_create_name_empty=✗ Key name cannot be empty
+keymgr_create_name_exists=✗ A key with that name already exists
+keymgr_create_usage_section=KEY USAGE
+keymgr_create_usage_prompt=What will you use this key for: 
+keymgr_create_usage_default=Drive encryption / Universal cipher
+keymgr_create_access_section=ACCESS CODE
+keymgr_create_access_hint=Set an access code for this key.
+keymgr_create_access_prompt=Access code: 
+keymgr_create_access_confirm=Confirm access code: 
+keymgr_create_access_empty=✗ Access code cannot be empty
+keymgr_create_generating=Generating AES-256 key...
+keymgr_create_ok=✓ Key generated successfully
+keymgr_create_created=KEY CREATED SUCCESSFULLY
+keymgr_create_info_name=Name: 
+keymgr_create_info_type=Type: AES-256 (256 bits)
+keymgr_create_info_usage=Usage: 
+keymgr_create_info_state=State: 
+keymgr_create_state_inactive=INACTIVE
+
+keymgr_toggle_title=ENABLE/DISABLE KEY
+keymgr_toggle_no_keys=No stored keys.
+keymgr_toggle_select=SELECT KEY
+keymgr_toggle_select_prompt=Select key number: 
+keymgr_toggle_deactivate_prompt=Disable key "{0}"? 
+keymgr_toggle_activate_prompt=Enable key "{0}"? 
+keymgr_toggle_access_prompt=Access code for "{0}": 
+keymgr_toggle_ok_deactivate=✓ Key disabled
+keymgr_toggle_ok_activate=✓ Key enabled
+keymgr_toggle_activated_name=Name: 
+keymgr_toggle_activated_state=State: 
+keymgr_toggle_state_active=ACTIVE
+
+keymgr_list_title=AES-256 KEY LIST
+keymgr_list_empty=No stored keys.
+keymgr_list_count=Stored keys ({0}):
+keymgr_list_summary=Total: {0} keys | Active: {1} | Inactive: {2}
+keymgr_list_status_inactive=(INACTIVE)
+
+keymgr_delete_title=DELETE KEY
+keymgr_delete_empty=No keys to delete.
+keymgr_delete_select=SELECT KEY TO DELETE
+keymgr_delete_prompt=Select key number to delete: 
+keymgr_delete_warning=⚠ WARNING: This action cannot be undone.
+keymgr_delete_confirm=Are you sure you want to delete key "{0}"? 
+keymgr_delete_access_prompt=Access code to confirm: 
+keymgr_delete_ok=✓ Key deleted
+
+keymgr_keyinfo_type=Type: 
+keymgr_keyinfo_usage=Usage: 
+keymgr_keyinfo_created=Created: 
+keymgr_keyinfo_last_used=Last used: 
+keymgr_keyinfo_state=State: 
+
+keymgr_verify_title=SECURITY VERIFICATION
+keymgr_verify_prompt=Enter your password: 
+keymgr_verify_empty=✗ Empty password
+keymgr_verify_fail=✗ Wrong password. Access denied.
+keymgr_verify_ok=✓ Access granted.
+
+# ------------------------------------------------------------
+# UNIVERSAL CIPHER
+# ------------------------------------------------------------
+univ_title=UNIVERSAL CIPHER
+univ_menu_title=MAIN MENU
+univ_menu_encrypt=[1] Encrypt file/directory
+univ_menu_decrypt=[2] Decrypt file/directory
+univ_menu_config=[3] Settings
+univ_menu_exit=[0] Exit
+univ_menu_prompt=Select option [0-3]: 
+
+univ_keys_title=AVAILABLE KEYS
+univ_keys_active=ACTIVE KEYS:
+univ_keys_cancel=[0] Cancel
+univ_keys_prompt=Select [0-{0}]: 
+univ_keys_none=No active keys available.
+univ_keys_no_manager=✗ Key manager not available
+univ_keys_invalid=✗ Invalid selection
+
+univ_activation_prompt=Activation code: 
+univ_activation_fail=✗ Wrong activation code
+
+univ_path_prompt=Path: 
+univ_ok=✓ Operation completed
+
+univ_stats_title=STATISTICS
+univ_stats_files=Files: 
+univ_stats_success=Successful: 
+univ_stats_fail=Failed: 
+univ_stats_time=Time: 
+
+univ_config_title=SETTINGS
+univ_config_current=CURRENT SETTINGS:
+univ_config_threads_system=System threads: 
+univ_config_threads_crypto=→ Crypto: 
+univ_config_threads_io=→ I/O: 
+univ_config_threads_reserved=→ Reserved for OS: 
+univ_config_buffer=Buffer: 
+univ_config_retries=Retries: 
+univ_config_mmap=mmap (> {0}MB): 
+univ_config_parallel=Parallel files: 
+univ_config_hmac=HMAC header: 
+univ_config_yes=✓
+univ_config_no=✗
+univ_config_yes_full=Yes
+univ_config_no_full=No
+
+univ_config_buf_max=[1] Max buffer ({0} MB)
+univ_config_rate=[2] Rate limit ({0} MB/s)
+univ_config_hmac_toggle=[3] HMAC header ({0})
+univ_config_parallel_toggle=[4] Parallel files ({0})
+univ_config_retries_toggle=[5] Retries ({0})
+univ_config_clear_counters=[6] Clear counters
+univ_config_back=[0] Back
+univ_config_prompt=Select [0-6]: 
+
+univ_config_buf_prompt=MB (2-32): 
+univ_config_rate_prompt=MB/s (10-1000): 
+univ_config_parallel_prompt=Number (1-16): 
+univ_config_retries_prompt=Number (0-5): 
+univ_config_clear_prompt=Delete all counters? 
+univ_config_cleared=⚠ Counters deleted (restart the app to recreate them)
+
+# ------------------------------------------------------------
+# UNIT ENCRYPTOR
+# ------------------------------------------------------------
+unit_title=DRIVE ENCRYPTOR
+unit_mode_custom=Custom mode active
+unit_units_title=DETECTED DRIVES:
+unit_units_none=No drives detected
+unit_units_system=SYSTEM
+unit_units_encrypted=ENCRYPTED
+unit_units_normal=NORMAL
+unit_units_mounted_flag=(M)
+unit_units_backup_flag=[B]
+
+unit_menu_select=[1-{0}] Select drive
+unit_menu_config=[C] Settings
+unit_menu_refresh=[R] Refresh
+unit_menu_exit=[0] Exit
+unit_menu_prompt=Select [0-{0},C,R]: 
+
+unit_detail_size=Size: 
+unit_detail_type=Type: 
+unit_detail_state=State: 
+unit_detail_backup=Backup available
+unit_detail_mounted=Mounted at: 
+unit_detail_system=⚠ SYSTEM DRIVE - OPERATIONS RESTRICTED
+
+unit_action_encrypt=[1] Encrypt drive
+unit_action_decrypt=[1] Decrypt drive
+unit_action_mount=[2] Mount drive
+unit_action_unmount=[3] Unmount drive
+unit_action_format=[4] Format drive
+unit_action_restore=[5] Restore header from backup
+unit_action_back=[0] Back
+unit_action_prompt=Select [0-5]: 
+
+unit_mount_prompt=Mount point [{0}]: 
+unit_mount_already=Already mounted at {0}
+unit_mount_not=Drive is not mounted
+
+unit_process_title_cifrar=ENCRYPT
+unit_process_title_descifrar=DECRYPT
+unit_process_confirm_prompt=Type '{0}': 
+unit_process_keyword_encrypt=ENCRYPT
+unit_process_keyword_decrypt=DECRYPT
+unit_process_root_warning=⚠ This operation requires root privileges.
+unit_process_root_hint1=You will be asked for the sudo password.
+unit_process_root_hint2=After finishing, you will return to the normal user automatically.
+unit_process_unmount_prompt=Unmount? 
+unit_process_mount_after=Mount the decrypted drive? 
+
+unit_stats_title=STATISTICS
+unit_stats_total=Total: 
+unit_stats_time=Time: 
+unit_stats_speed=Speed: 
+unit_stats_peak=peak: 
+
+unit_format_title=DRIVE FORMAT
+unit_format_warn_encrypted=⚠ Drive is marked as ENCRYPTED
+unit_format_clean=[1] Clean header only (remove mark)
+unit_format_fs_title=FILE SYSTEM:
+unit_format_fat32=[2] FAT32 (USB, compatible)
+unit_format_ntfs=[3] NTFS (Windows)
+unit_format_ext4=[4] ext4 (Linux)
+unit_format_exfat=[5] exFAT (large files)
+unit_format_cancel=[0] Cancel
+unit_format_prompt=Select option [0-5]: 
+unit_format_clean_ok=✓ Drive marked as NOT ENCRYPTED
+unit_format_ok=✓ Drive formatted and marked as NOT ENCRYPTED
+
+unit_format_quick_warn=⚠ QUICK FORMAT
+unit_format_quick_unit=Drive: 
+unit_format_quick_size=Size: 
+unit_format_quick_type=Format: 
+unit_format_quick_confirm=Type 'FORMAT' to confirm: 
+unit_format_quick_keyword=FORMAT
+unit_format_quick_cancelled=Cancelled.
+unit_format_quick_formatting=Formatting...
+
+unit_config_title=SETTINGS
+unit_config_default=DEFAULT SETTINGS:
+unit_config_cores=Cores: 
+unit_config_io_threads=I/O Threads: 
+unit_config_crypto_threads=Crypto Threads: 
+unit_config_reserved_os=Reserved OS: 
+unit_config_custom=Custom settings:
+unit_config_buffer=Buffer: 
+unit_config_direct_io=Direct I/O: 
+unit_config_custom_mode=Custom mode: 
+unit_config_inactive=Custom mode: INACTIVE
+unit_config_activated=Enabled
+unit_config_deactivated=Disabled
+unit_config_yes=Yes
+unit_config_no=No
+
+unit_config_menu_custom=[1] Custom settings
+unit_config_menu_toggle=[2] Toggle custom mode
+unit_config_menu_back=[0] Back
+unit_config_menu_prompt=Select option [0-2]: 
+
+unit_config_custom_title=CUSTOM SETTINGS
+unit_config_custom_buffer=Buffer size (MB) [{0}]: 
+unit_config_custom_io=I/O threads [{0}]: 
+unit_config_custom_crypto=Crypto threads [{0}]: 
+unit_config_custom_direct=Use Direct I/O (y/n) [{0}]: 
+unit_config_custom_mode_prompt=Enable custom mode (y/n) [{0}]: 
+unit_config_saved=✓ Settings saved to rubic_config.cfg
+unit_config_mode_on=✓ Custom mode enabled
+unit_config_mode_off=✓ Custom mode disabled
+
+unit_no_key=Could not obtain master key
+unit_no_key_short=Could not obtain key
+
+# ------------------------------------------------------------
+# FILE SHARING
+# ------------------------------------------------------------
+share_title=FILE SHARING
+share_send=[1] Send files
+share_recv=[2] Receive files
+share_trust=[3] Trusted identities manager
+share_net=[4] Network settings
+share_back=[5] Back
+share_prompt=Option: 
+
+share_send_title=SEND FILES
+share_send_format=Format: IP:PORT (default :{0})
+share_send_addr_prompt=Destination address: 
+share_send_addr_invalid=✗ Invalid address. Format: IP:PORT
+share_send_path_prompt=File/folder path: 
+share_send_no_files=✗ No files found
+share_send_files_info=Files: {0} | Total: {1} MB
+share_send_confirm=Continue? 
+share_send_sending=Sending {0} files...
+share_send_ok=✓ Send completed
+share_send_fail=✗ Send failed
+share_send_enter=Press Enter...
+
+share_recv_title=RECEIVE FILES
+share_recv_start_fail=✗ Could not start receiving server
+share_recv_waiting=✓ Waiting at {0}:{1}
+share_recv_your_id=✓ Your ID: 
+share_recv_folder=Receive folder: 
+share_recv_stop_hint=[Type 'q' and press ENTER to stop receiving]
+share_recv_stopped=✓ Receiving stopped
+share_recv_enter=Press Enter to return...
+
+share_trust_title=TRUSTED FINGERPRINTS (TOFU)
+share_trust_empty=No registered identities.
+share_trust_add_prompt=Enter a fingerprint manually? 
+share_trust_fp_prompt=Fingerprint: 
+share_trust_saved=Fingerprint saved
+share_trust_save_fail=✗ Could not save fingerprint
+
+share_net_current_ip=Current IP: 
+share_net_kem_port=Exchange port (KEM): 
+share_net_xfer_port=Transfer port: 
+share_net_change_prompt=Change ports? 
+share_net_kem_new=New exchange port: 
+share_net_xfer_new=New transfer port: 
+share_net_updated=✓ Ports updated
+share_net_invalid=✗ Invalid port
+
+# ------------------------------------------------------------
+# TOFU / SECURITY ALERTS
+# ------------------------------------------------------------
+tofu_title=⚠ SECURITY ALERT (TOFU) ⚠
+tofu_new_incoming=An incoming connection was detected from a new or unverified identity.
+tofu_new_outgoing=You are connecting to a new or unverified identity.
+tofu_user=User: 
+tofu_fingerprint=Fingerprint:  
+tofu_prompt=Trust this identity, continue anyway and save for the future? 
+tofu_accepted=✓ Identity saved as trusted. Continuing...
+tofu_rejected=✗ Connection cancelled.
+
+mitm_title=⚠⚠⚠ SECURITY ALERT! ⚠⚠⚠
+mitm_detail=Possible MITM attack detected against: {0}
+mitm_abort=The remote's Dilithium signature is INVALID. Connection aborted.
+
+# ------------------------------------------------------------
+# LOG EVENTS — SHARE MANAGER
+# ------------------------------------------------------------
+log_share_connecting=  Connecting to {0}...
+log_share_connect_failed=  ✗ Connection failed: {0}
+log_share_exchange_failed=  ✗ Key exchange failed with {0}
+log_share_session_established=  ✓ Secure session: {0}
+log_share_receiving_from=  Receiving from {0}...
+log_share_server_start_failed=  ✗ Could not start servers
+log_share_kyber_gen_failed=  ✗ Could not generate Kyber keys
+log_share_server_started=  ✓ Servers started
+log_share_server_stopped=  ✓ Servers stopped
+log_share_no_files=  ⚠ No files to send
+log_share_sending_files=  Sending {0} files...
+log_share_send_complete=  ✓ Send completed ({0})
+log_share_send_failed=  ✗ Send failed to {0}
+log_share_identity_load_error=  ✗ Error loading Dilithium identity
+log_share_trust_accepted=  ✓ Identity {0} marked as trusted
+log_share_trust_rejected=  ✗ Identity {0} rejected
+
+# ------------------------------------------------------------
+# LOG EVENTS — UNIT ENCRYPTOR
+# ------------------------------------------------------------
+log_unit_header_writing=  Writing header...
+log_unit_header_written=  ✓ Header written
+log_unit_header_read_failed=  ⚠ Header unreadable: {0}
+log_unit_header_verified=  ✓ {0}
+log_unit_header_removed=  ✓ Header removed
+log_unit_header_restoring=  Restoring header...
+log_unit_header_restored=  ✓ Header restored
+log_unit_header_restore_failed=  ✗ Error restoring header
+log_unit_header_clean_failed=  ✗ Error cleaning header
+log_unit_backup_saved=  ✓ Backup saved
+log_unit_backup_save_failed=  ⚠ Could not save backup
+log_unit_backup_loaded=  ✓ Header recovered from backup
+log_unit_backup_load_failed=  ✗ Could not load backup
+log_unit_backup_removed=  ✓ Backup removed
+log_unit_salt_generating=  Generating KDF salt...
+log_unit_salt_generated=  ✓ Salt generated
+log_unit_salt_error=  ✗ Error generating KDF salt
+log_unit_key_deriving=  Deriving key...
+log_unit_key_derived=  ✓ Key derived
+log_unit_key_derive_error=  ✗ Error deriving key
+log_unit_hmac_calc=  Calculating HMAC...
+log_unit_hmac_verify=  Verifying HMAC...
+log_unit_hmac_error=  ✗ HMAC error: {0}
+log_unit_hmac_verified=  ✓ HMAC verified
+log_unit_hmac_failed=  ✗ HMAC authentication failed
+log_unit_sys_disk_blocked=  ⚠ CANNOT ENCRYPT SYSTEM DRIVE
+log_unit_already_encrypted=  Drive is already encrypted
+log_unit_not_encrypted=  Drive is not encrypted
+log_unit_mounted=  ⚠ Drive is mounted at {0}
+log_unit_master_key_invalid=  Could not obtain master key: {0}
+log_unit_device_open_failed=  Cannot open device: {0}
+log_unit_device_open_retry=  Retrying {0}...
+log_unit_device_size_failed=  Error getting size: {0}
+log_unit_device_type=  Type detected: {0}
+log_unit_config_auto=  Mode: AUTOMATIC ({0})
+log_unit_config_custom=  Mode: CUSTOM ({0})
+log_unit_chunk_size=  Chunk: {0} MB
+log_unit_io_direct=  I/O mode: DIRECT
+log_unit_io_normal=  I/O mode: NORMAL
+log_unit_data_size=  Data to process: {0}
+log_unit_chunk_count=  Processing {0} chunks...
+log_unit_processing=  Processing...
+log_unit_processing_complete=  ✓ Processing completed
+log_unit_processing_failed=  ✗ Error during processing
+log_unit_processing_stopped=  ⚠ Processing stopped
+log_unit_chunk_read_error=  ✗ Read error on chunk {0}
+log_unit_chunk_process_error=  ✗ Error processing chunk {0}
+log_unit_chunk_write_error=  ✗ Write error on chunk {0}
+log_unit_mounting=  Mounting at {0}...
+log_unit_mounted_ok=  ✓ Mounted at {0}
+log_unit_mount_failed=  ✗ Mount error (code: {0})
+log_unit_unmounting=  Unmounting {0}...
+log_unit_unmounted=  ✓ Unmounted
+log_unit_unmount_failed=  ✗ Could not unmount
+log_unit_cleanup_header=  Removing header...
+log_unit_cleanup_backup=  Removing backup...
+log_unit_format_start=  Formatting {0}...
+log_unit_format_ok=  ✓ Formatted successfully
+log_unit_format_failed=  ✗ Format error (code: {0})
+
+# ------------------------------------------------------------
+# LOG EVENTS — UNIVERSAL CIPHER
+# ------------------------------------------------------------
+log_univ_path_invalid=✗ Invalid path: {0}
+log_univ_no_files=⚠ No files
+log_univ_no_files_process=⚠ No files to process
+log_univ_processing_single=Processing...
+log_univ_file_done=  ✓ Completed
+log_univ_file_error=  ✗ Error
+log_univ_file_move_error=  ✗ Error moving file
+log_univ_no_keymgr=✗ Key manager not available
+log_univ_key_not_found=✗ Key not found: {0}
+log_univ_key_not_active=✗ Key '{0}' is not active
+log_univ_key_value_error=✗ Could not get key value
+log_univ_key_length_error=✗ Invalid key length
+
+# ------------------------------------------------------------
+# LOG EVENTS — KEY MANAGER
+# ------------------------------------------------------------
+log_keymgr_usersdir_fail=✗ Cannot create users directory
+log_keymgr_file_create_fail=✗ Cannot create keys file
+log_keymgr_file_open_fail=✗ Cannot open keys file
+log_keymgr_pwd_not_set=✗ User password not set
+log_keymgr_encrypt_fail=✗ Error encrypting keys
+log_keymgr_decrypt_fail=✗ Error decrypting keys. Wrong password or corrupted file.

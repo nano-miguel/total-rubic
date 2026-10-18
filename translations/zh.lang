@@ -1,0 +1,548 @@
+# ============================================================
+# RUBIC-A — 简体中文 (zh-CN)
+# ============================================================
+# 格式：键=值
+# 注释：以 # 开头的行
+# 占位符：{0}, {1}, ...
+# 注意：值末尾的空格是有意义的
+#       （提示文本在用户输入前有空格）
+# ============================================================
+
+# ------------------------------------------------------------
+# 通用
+# ------------------------------------------------------------
+press_enter=按 Enter 键继续...
+press_enter_short=按 Enter 键...
+back=返回
+cancel=取消
+yes_no_hint=(是/否)
+yes_no_hint_alt=(Y/N)
+continue_prompt=继续吗？
+confirm_continue=继续吗？
+error_unknown=未知错误
+error_invalid_input=输入无效
+error_invalid_selection=选择无效
+error_cancelled=操作已取消
+
+# ------------------------------------------------------------
+# 登录 / 账户
+# ------------------------------------------------------------
+login_title=登录
+login_user_prompt=用户名：
+login_password_prompt=密码：
+login_ok=欢迎，{0}
+login_fail=凭据无效
+login_user_not_found=用户不存在
+login_wrong_password=密码错误
+login_hardware_mismatch=凭据或硬件无效
+login_throttled=已锁定。请等待 {0} 秒。
+login_throttled_long=由于失败次数过多，已临时锁定
+
+register_title=创建账户
+register_user_prompt=用户名：
+register_confirm_prompt=确认：
+register_pw_mismatch=✗ 不一致 ({0}/3)
+register_pw_too_short=X 最少 8 个字符
+register_ok=✓ 账户创建成功
+register_id_generated=✓ 数字身份已自动生成
+register_id_generating=正在自动生成 Dilithium-6x5-AES-r3 数字身份...
+register_id_fail=⚠ 警告：无法自动生成数字身份
+register_id_fail_hint=您可以稍后在设置菜单中生成
+register_argon=正在生成 ARGON2 凭据并绑定到硬件...
+register_identity_linked=✓ 数字身份已绑定到系统
+
+logout_msg=正在注销...
+exit_msg=正在退出...
+
+# ------------------------------------------------------------
+# 主菜单
+# ------------------------------------------------------------
+main_menu_title=主菜单 - {0}
+main_menu_tools=---加密工具//
+main_menu_security=---安全管理//
+main_menu_share=---文件共享//
+main_menu_admin=---管理与会话//
+main_menu_encrypt_unit=[1] 加密磁盘
+main_menu_universal=[2] 通用加密器
+main_menu_keys=[3] 密钥管理器
+main_menu_share_files=[4] 共享文件
+main_menu_config=[5] 设置
+main_menu_logout=[6] 注销
+main_menu_exit=[0] 退出
+main_menu_prompt=选项 [0-6]：
+
+# ------------------------------------------------------------
+# 设置（核心）
+# ------------------------------------------------------------
+config_title=设置
+config_change_pwd=[1] 修改密码
+config_user_info=[2] 用户信息
+config_gen_identity=[3] 生成数字身份
+config_lang=[4] 语言 / Language ({0})
+config_back=[5] 返回
+config_prompt=选项 [1-5]：
+
+config_lang_title=可用语言：
+config_lang_current=(当前)
+config_lang_select=请选择：
+config_lang_changed=✓ 语言已更改为 {0}
+config_lang_save_fail=✗ 无法保存更改
+config_lang_none=✗ translations/ 中没有 .lang 文件
+
+# ------------------------------------------------------------
+# 用户信息
+# ------------------------------------------------------------
+userinfo_title=用户信息
+userinfo_user=用户：
+userinfo_algo=算法：
+userinfo_created=创建时间：
+userinfo_identity=身份：
+userinfo_identity_active=✓ 已激活
+userinfo_identity_pending=✗ 待处理
+userinfo_fingerprint=指纹：
+userinfo_load_error=✗ 错误：无法加载用户信息
+
+# ------------------------------------------------------------
+# 修改密码
+# ------------------------------------------------------------
+chpwd_title=修改密码
+chpwd_current=当前密码：
+chpwd_new=密码：
+chpwd_confirm=确认：
+chpwd_ok=✓ 密码已修改
+chpwd_fail=✗ {0}
+
+# ------------------------------------------------------------
+# 数字身份
+# ------------------------------------------------------------
+ident_title=生成数字身份
+ident_generating=正在生成 Dilithium-6x5-AES-r3 密钥 (PQC)...
+ident_ok=✓ 身份生成成功
+ident_fingerprint=指纹：
+ident_fail=✗ {0}
+
+# ------------------------------------------------------------
+# 密钥管理器
+# ------------------------------------------------------------
+keymgr_title=AES-256 密钥管理器
+keymgr_user=用户：
+keymgr_count=已存储密钥：
+keymgr_protection=保护：Argon2id + AES-256-GCM
+
+keymgr_menu_create=[1] 创建新的 AES-256 密钥
+keymgr_menu_toggle=[2] 启用/禁用密钥
+keymgr_menu_list=[3] 密钥列表
+keymgr_menu_delete=[4] 删除密钥
+keymgr_menu_back=[5] 返回
+keymgr_menu_prompt=请选择选项 [1-5]：
+
+keymgr_create_title=创建新的 AES-256 密钥
+keymgr_create_name_section=密钥名称
+keymgr_create_name_prompt=用于标识密钥的名称：
+keymgr_create_name_empty=✗ 密钥名称不能为空
+keymgr_create_name_exists=✗ 已存在同名的密钥
+keymgr_create_usage_section=密钥用途
+keymgr_create_usage_prompt=您将使用此密钥做什么：
+keymgr_create_usage_default=磁盘加密 / 通用加密器
+keymgr_create_access_section=访问代码
+keymgr_create_access_hint=为此密钥设置访问代码。
+keymgr_create_access_prompt=访问代码：
+keymgr_create_access_confirm=确认访问代码：
+keymgr_create_access_empty=✗ 访问代码不能为空
+keymgr_create_generating=正在生成 AES-256 密钥...
+keymgr_create_ok=✓ 密钥生成成功
+keymgr_create_created=密钥创建成功
+keymgr_create_info_name=名称：
+keymgr_create_info_type=类型：AES-256（256 位）
+keymgr_create_info_usage=用途：
+keymgr_create_info_state=状态：
+keymgr_create_state_inactive=未激活
+
+keymgr_toggle_title=启用/禁用密钥
+keymgr_toggle_no_keys=没有已存储的密钥。
+keymgr_toggle_select=选择密钥
+keymgr_toggle_select_prompt=请选择密钥编号：
+keymgr_toggle_deactivate_prompt=禁用密钥 "{0}" 吗？
+keymgr_toggle_activate_prompt=启用密钥 "{0}" 吗？
+keymgr_toggle_access_prompt="{0}" 的访问代码：
+keymgr_toggle_ok_deactivate=✓ 密钥已禁用
+keymgr_toggle_ok_activate=✓ 密钥已启用
+keymgr_toggle_activated_name=名称：
+keymgr_toggle_activated_state=状态：
+keymgr_toggle_state_active=已激活
+
+keymgr_list_title=AES-256 密钥列表
+keymgr_list_empty=没有已存储的密钥。
+keymgr_list_count=已存储密钥 ({0})：
+keymgr_list_summary=总计：{0} 个密钥 | 激活：{1} | 未激活：{2}
+keymgr_list_status_inactive=（未激活）
+
+keymgr_delete_title=删除密钥
+keymgr_delete_empty=没有可删除的密钥。
+keymgr_delete_select=选择要删除的密钥
+keymgr_delete_prompt=请选择要删除的密钥编号：
+keymgr_delete_warning=⚠ 警告：此操作无法撤销。
+keymgr_delete_confirm=您确定要删除密钥 "{0}" 吗？
+keymgr_delete_access_prompt=确认访问代码：
+keymgr_delete_ok=✓ 密钥已删除
+
+keymgr_keyinfo_type=类型：
+keymgr_keyinfo_usage=用途：
+keymgr_keyinfo_created=创建时间：
+keymgr_keyinfo_last_used=上次使用：
+keymgr_keyinfo_state=状态：
+
+keymgr_verify_title=安全验证
+keymgr_verify_prompt=请输入您的密码：
+keymgr_verify_empty=✗ 密码为空
+keymgr_verify_fail=✗ 密码错误。拒绝访问。
+keymgr_verify_ok=✓ 已授权访问。
+
+# ------------------------------------------------------------
+# 通用加密器
+# ------------------------------------------------------------
+univ_title=通用加密器
+univ_menu_title=主菜单
+univ_menu_encrypt=[1] 加密文件/文件夹
+univ_menu_decrypt=[2] 解密文件/文件夹
+univ_menu_config=[3] 设置
+univ_menu_exit=[0] 退出
+univ_menu_prompt=请选择选项 [0-3]：
+
+univ_keys_title=可用密钥
+univ_keys_active=激活的密钥：
+univ_keys_cancel=[0] 取消
+univ_keys_prompt=请选择 [0-{0}]：
+univ_keys_none=没有可用的激活密钥。
+univ_keys_no_manager=✗ 密钥管理器不可用
+univ_keys_invalid=✗ 选择无效
+
+univ_activation_prompt=激活代码：
+univ_activation_fail=✗ 激活代码错误
+
+univ_path_prompt=路径：
+univ_ok=✓ 操作完成
+
+univ_stats_title=统计
+univ_stats_files=文件：
+univ_stats_success=成功：
+univ_stats_fail=失败：
+univ_stats_time=时间：
+
+univ_config_title=设置
+univ_config_current=当前设置：
+univ_config_threads_system=系统线程：
+univ_config_threads_crypto=→ 加密：
+univ_config_threads_io=→ I/O：
+univ_config_threads_reserved=→ 为系统保留：
+univ_config_buffer=缓冲区：
+univ_config_retries=重试：
+univ_config_mmap=mmap（> {0}MB）：
+univ_config_parallel=并行文件：
+univ_config_hmac=头部 HMAC：
+univ_config_yes=✓
+univ_config_no=✗
+univ_config_yes_full=是
+univ_config_no_full=否
+
+univ_config_buf_max=[1] 最大缓冲区（{0} MB）
+univ_config_rate=[2] 速率限制（{0} MB/s）
+univ_config_hmac_toggle=[3] 头部 HMAC（{0}）
+univ_config_parallel_toggle=[4] 并行文件（{0}）
+univ_config_retries_toggle=[5] 重试（{0}）
+univ_config_clear_counters=[6] 清除计数器
+univ_config_back=[0] 返回
+univ_config_prompt=请选择 [0-6]：
+
+univ_config_buf_prompt=MB（2-32）：
+univ_config_rate_prompt=MB/s（10-1000）：
+univ_config_parallel_prompt=数量（1-16）：
+univ_config_retries_prompt=数量（0-5）：
+univ_config_clear_prompt=删除所有计数器吗？
+univ_config_cleared=⚠ 计数器已删除（重启应用以重新创建）
+
+# ------------------------------------------------------------
+# 磁盘加密器
+# ------------------------------------------------------------
+unit_title=磁盘加密器
+unit_mode_custom=自定义模式已启用
+unit_units_title=已检测到的磁盘：
+unit_units_none=未检测到磁盘
+unit_units_system=系统
+unit_units_encrypted=已加密
+unit_units_normal=普通
+unit_units_mounted_flag=(已挂载)
+unit_units_backup_flag=[备份]
+
+unit_menu_select=[1-{0}] 选择磁盘
+unit_menu_config=[C] 设置
+unit_menu_refresh=[R] 刷新
+unit_menu_exit=[0] 退出
+unit_menu_prompt=请选择 [0-{0},C,R]：
+
+unit_detail_size=大小：
+unit_detail_type=类型：
+unit_detail_state=状态：
+unit_detail_backup=备份可用
+unit_detail_mounted=挂载于：
+unit_detail_system=⚠ 系统磁盘 - 操作受限
+
+unit_action_encrypt=[1] 加密磁盘
+unit_action_decrypt=[1] 解密磁盘
+unit_action_mount=[2] 挂载磁盘
+unit_action_unmount=[3] 卸载磁盘
+unit_action_format=[4] 格式化磁盘
+unit_action_restore=[5] 从备份恢复头部
+unit_action_back=[0] 返回
+unit_action_prompt=请选择 [0-5]：
+
+unit_mount_prompt=挂载点 [{0}]：
+unit_mount_already=已挂载于 {0}
+unit_mount_not=磁盘未挂载
+
+unit_process_title_cifrar=加密
+unit_process_title_descifrar=解密
+unit_process_confirm_prompt=请输入 '{0}'：
+unit_process_keyword_encrypt=加密
+unit_process_keyword_decrypt=解密
+unit_process_root_warning=⚠ 此操作需要 root 权限。
+unit_process_root_hint1=将要求您输入 sudo 密码。
+unit_process_root_hint2=完成后，您将自动返回普通用户。
+unit_process_unmount_prompt=卸载吗？
+unit_process_mount_after=挂载解密后的磁盘吗？
+
+unit_stats_title=统计
+unit_stats_total=总计：
+unit_stats_time=时间：
+unit_stats_speed=速度：
+unit_stats_peak=峰值：
+
+unit_format_title=格式化磁盘
+unit_format_warn_encrypted=⚠ 磁盘已标记为已加密
+unit_format_clean=[1] 仅清除头部（移除标记）
+unit_format_fs_title=文件系统：
+unit_format_fat32=[2] FAT32（USB，兼容）
+unit_format_ntfs=[3] NTFS（Windows）
+unit_format_ext4=[4] ext4（Linux）
+unit_format_exfat=[5] exFAT（大文件）
+unit_format_cancel=[0] 取消
+unit_format_prompt=请选择选项 [0-5]：
+unit_format_clean_ok=✓ 磁盘已标记为未加密
+unit_format_ok=✓ 磁盘已格式化并标记为未加密
+
+unit_format_quick_warn=⚠ 快速格式化
+unit_format_quick_unit=磁盘：
+unit_format_quick_size=大小：
+unit_format_quick_type=格式：
+unit_format_quick_confirm=输入 'FORMAT' 以确认：
+unit_format_quick_keyword=FORMAT
+unit_format_quick_cancelled=已取消。
+unit_format_quick_formatting=正在格式化...
+
+unit_config_title=设置
+unit_config_default=默认设置：
+unit_config_cores=核心数：
+unit_config_io_threads=I/O 线程：
+unit_config_crypto_threads=加密线程：
+unit_config_reserved_os=为系统保留：
+unit_config_custom=自定义设置：
+unit_config_buffer=缓冲区：
+unit_config_direct_io=直接 I/O：
+unit_config_custom_mode=自定义模式：
+unit_config_inactive=自定义模式：未启用
+unit_config_activated=已启用
+unit_config_deactivated=已禁用
+unit_config_yes=是
+unit_config_no=否
+
+unit_config_menu_custom=[1] 自定义设置
+unit_config_menu_toggle=[2] 切换自定义模式
+unit_config_menu_back=[0] 返回
+unit_config_menu_prompt=请选择选项 [0-2]：
+
+unit_config_custom_title=自定义设置
+unit_config_custom_buffer=缓冲区大小（MB）[{0}]：
+unit_config_custom_io=I/O 线程 [{0}]：
+unit_config_custom_crypto=加密线程 [{0}]：
+unit_config_custom_direct=使用直接 I/O（是/否）[{0}]：
+unit_config_custom_mode_prompt=启用自定义模式（是/否）[{0}]：
+unit_config_saved=✓ 设置已保存到 rubic_config.cfg
+unit_config_mode_on=✓ 自定义模式已启用
+unit_config_mode_off=✓ 自定义模式已禁用
+
+unit_no_key=无法获取主密钥
+unit_no_key_short=无法获取密钥
+
+# ------------------------------------------------------------
+# 文件共享
+# ------------------------------------------------------------
+share_title=文件共享
+share_send=[1] 发送文件
+share_recv=[2] 接收文件
+share_trust=[3] 管理受信任身份
+share_net=[4] 网络设置
+share_back=[5] 返回
+share_prompt=选项：
+
+share_send_title=发送文件
+share_send_format=格式：IP:端口（默认 :{0}）
+share_send_addr_prompt=目标地址：
+share_send_addr_invalid=✗ 地址无效。格式：IP:端口
+share_send_path_prompt=文件/文件夹路径：
+share_send_no_files=✗ 未找到文件
+share_send_files_info=文件：{0} | 总计：{1} MB
+share_send_confirm=继续吗？
+share_send_sending=正在发送 {0} 个文件...
+share_send_ok=✓ 发送完成
+share_send_fail=✗ 发送失败
+share_send_enter=按 Enter 键...
+
+share_recv_title=接收文件
+share_recv_start_fail=✗ 无法启动接收服务器
+share_recv_waiting=✓ 正在 {0}:{1} 等待
+share_recv_your_id=✓ 您的 ID：
+share_recv_folder=接收文件夹：
+share_recv_stop_hint=[输入 'q' 并按 ENTER 停止接收]
+share_recv_stopped=✓ 接收已停止
+share_recv_enter=按 Enter 键返回...
+
+share_trust_title=受信任指纹 (TOFU)
+share_trust_empty=没有注册的身份。
+share_trust_add_prompt=手动输入指纹吗？
+share_trust_fp_prompt=指纹：
+share_trust_saved=指纹已保存
+share_trust_save_fail=✗ 无法保存指纹
+
+share_net_current_ip=当前 IP：
+share_net_kem_port=交换端口 (KEM)：
+share_net_xfer_port=传输端口：
+share_net_change_prompt=更改端口吗？
+share_net_kem_new=新的交换端口：
+share_net_xfer_new=新的传输端口：
+share_net_updated=✓ 端口已更新
+share_net_invalid=✗ 端口无效
+
+# ------------------------------------------------------------
+# TOFU / 安全警报
+# ------------------------------------------------------------
+tofu_title=⚠ 安全警报 (TOFU) ⚠
+tofu_new_incoming=检测到来自新身份或未验证身份的入站连接。
+tofu_new_outgoing=您正在连接到新身份或未验证的身份。
+tofu_user=用户：
+tofu_fingerprint=指纹：
+tofu_prompt=是否信任此身份、继续并保存以备将来使用？
+tofu_accepted=✓ 身份已保存为受信任。继续...
+tofu_rejected=✗ 连接已取消。
+
+mitm_title=⚠⚠⚠ 安全警报！⚠⚠⚠
+mitm_detail=检测到可能的 MITM 攻击，目标为：{0}
+mitm_abort=对方的 Dilithium 签名无效。连接已中止。
+
+# ------------------------------------------------------------
+# 事件 — SHARE MANAGER
+# ------------------------------------------------------------
+log_share_connecting=  正在连接到 {0}...
+log_share_connect_failed=  ✗ 连接失败：{0}
+log_share_exchange_failed=  ✗ 与 {0} 的密钥交换失败
+log_share_session_established=  ✓ 安全会话：{0}
+log_share_receiving_from=  正在接收来自 {0} 的数据...
+log_share_server_start_failed=  ✗ 无法启动服务器
+log_share_kyber_gen_failed=  ✗ 无法生成 Kyber 密钥
+log_share_server_started=  ✓ 服务器已启动
+log_share_server_stopped=  ✓ 服务器已停止
+log_share_no_files=  ⚠ 没有要发送的文件
+log_share_sending_files=  正在发送 {0} 个文件...
+log_share_send_complete=  ✓ 发送完成（{0}）
+log_share_send_failed=  ✗ 发送至 {0} 失败
+log_share_identity_load_error=  ✗ 加载 Dilithium 身份时出错
+log_share_trust_accepted=  ✓ 身份 {0} 已标记为受信任
+log_share_trust_rejected=  ✗ 身份 {0} 已被拒绝
+
+# ------------------------------------------------------------
+# 事件 — UNIT ENCRYPTOR
+# ------------------------------------------------------------
+log_unit_header_writing=  正在写入头部...
+log_unit_header_written=  ✓ 头部已写入
+log_unit_header_read_failed=  ⚠ 头部不可读：{0}
+log_unit_header_verified=  ✓ {0}
+log_unit_header_removed=  ✓ 头部已移除
+log_unit_header_restoring=  正在恢复头部...
+log_unit_header_restored=  ✓ 头部已恢复
+log_unit_header_restore_failed=  ✗ 恢复头部时出错
+log_unit_header_clean_failed=  ✗ 清理头部时出错
+log_unit_backup_saved=  ✓ 备份已保存
+log_unit_backup_save_failed=  ⚠ 无法保存备份
+log_unit_backup_loaded=  ✓ 已从备份恢复头部
+log_unit_backup_load_failed=  ✗ 无法加载备份
+log_unit_backup_removed=  ✓ 备份已移除
+log_unit_salt_generating=  正在生成 KDF 盐...
+log_unit_salt_generated=  ✓ 盐已生成
+log_unit_salt_error=  ✗ 生成 KDF 盐时出错
+log_unit_key_deriving=  正在派生密钥...
+log_unit_key_derived=  ✓ 密钥已派生
+log_unit_key_derive_error=  ✗ 派生密钥时出错
+log_unit_hmac_calc=  正在计算 HMAC...
+log_unit_hmac_verify=  正在验证 HMAC...
+log_unit_hmac_error=  ✗ HMAC 错误：{0}
+log_unit_hmac_verified=  ✓ HMAC 已验证
+log_unit_hmac_failed=  ✗ HMAC 认证失败
+log_unit_sys_disk_blocked=  ⚠ 无法加密系统磁盘
+log_unit_already_encrypted=  磁盘已加密
+log_unit_not_encrypted=  磁盘未加密
+log_unit_mounted=  ⚠ 磁盘已挂载于 {0}
+log_unit_master_key_invalid=  无法获取主密钥：{0}
+log_unit_device_open_failed=  无法打开设备：{0}
+log_unit_device_open_retry=  重试 {0}...
+log_unit_device_size_failed=  获取大小时出错：{0}
+log_unit_device_type=  检测到的类型：{0}
+log_unit_config_auto=  模式：自动（{0}）
+log_unit_config_custom=  模式：自定义（{0}）
+log_unit_chunk_size=  块：{0} MB
+log_unit_io_direct=  I/O 模式：直接
+log_unit_io_normal=  I/O 模式：普通
+log_unit_data_size=  待处理数据：{0}
+log_unit_chunk_count=  正在处理 {0} 个块...
+log_unit_processing=  正在处理...
+log_unit_processing_complete=  ✓ 处理完成
+log_unit_processing_failed=  ✗ 处理期间出错
+log_unit_processing_stopped=  ⚠ 处理已停止
+log_unit_chunk_read_error=  ✗ 读取块 {0} 时出错
+log_unit_chunk_process_error=  ✗ 处理块 {0} 时出错
+log_unit_chunk_write_error=  ✗ 写入块 {0} 时出错
+log_unit_mounting=  正在挂载到 {0}...
+log_unit_mounted_ok=  ✓ 已挂载于 {0}
+log_unit_mount_failed=  ✗ 挂载错误（代码：{0}）
+log_unit_unmounting=  正在卸载 {0}...
+log_unit_unmounted=  ✓ 已卸载
+log_unit_unmount_failed=  ✗ 无法卸载
+log_unit_cleanup_header=  正在移除头部...
+log_unit_cleanup_backup=  正在移除备份...
+log_unit_format_start=  正在格式化 {0}...
+log_unit_format_ok=  ✓ 格式化成功
+log_unit_format_failed=  ✗ 格式化错误（代码：{0}）
+
+# ------------------------------------------------------------
+# 事件 — UNIVERSAL CIPHER
+# ------------------------------------------------------------
+log_univ_path_invalid=✗ 路径无效：{0}
+log_univ_no_files=⚠ 没有文件
+log_univ_no_files_process=⚠ 没有要处理的文件
+log_univ_processing_single=正在处理...
+log_univ_file_done=  ✓ 已完成
+log_univ_file_error=  ✗ 错误
+log_univ_file_move_error=  ✗ 移动文件时出错
+log_univ_no_keymgr=✗ 密钥管理器不可用
+log_univ_key_not_found=✗ 未找到密钥：{0}
+log_univ_key_not_active=✗ 密钥 '{0}' 未激活
+log_univ_key_value_error=✗ 无法获取密钥值
+log_univ_key_length_error=✗ 密钥长度无效
+
+# ------------------------------------------------------------
+# 事件 — KEY MANAGER
+# ------------------------------------------------------------
+log_keymgr_usersdir_fail=✗ 无法创建用户目录
+log_keymgr_file_create_fail=✗ 无法创建密钥文件
+log_keymgr_file_open_fail=✗ 无法打开密钥文件
+log_keymgr_pwd_not_set=✗ 用户密码未设置
+log_keymgr_encrypt_fail=✗ 加密密钥时出错
+log_keymgr_decrypt_fail=✗ 解密密钥时出错。密码错误或文件损坏。
