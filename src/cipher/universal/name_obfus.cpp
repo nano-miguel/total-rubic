@@ -11,11 +11,7 @@
 #include <cstring>
 #include <iostream>
 
-// ============================================
 // NameKeyMgr
-// ============================================
-
-// 🔴 ¡ESTA ERA LA QUE FALTABA! 🔴
 Botan::secure_vector<uint8_t> NameKeyMgr::derive_name_key(const Botan::secure_vector<uint8_t>& master) {
     auto hash = Botan::HashFunction::create_or_throw("SHA-256");
     hash->update(master);
@@ -23,7 +19,8 @@ Botan::secure_vector<uint8_t> NameKeyMgr::derive_name_key(const Botan::secure_ve
     return hash->final();
 }
 
-bool NameKeyMgr::write_full(int fd, const void* data, size_t size) {
+bool NameKeyMgr::write_full(int fd, const void* data, size_t size)
+{
     const uint8_t* ptr = static_cast<const uint8_t*>(data);
     size_t remaining = size;
     while (remaining > 0) {
@@ -35,7 +32,8 @@ bool NameKeyMgr::write_full(int fd, const void* data, size_t size) {
     return true;
 }
 
-bool NameKeyMgr::read_full(int fd, void* data, size_t size) {
+bool NameKeyMgr::read_full(int fd, void* data, size_t size)
+{
     uint8_t* ptr = static_cast<uint8_t*>(data);
     size_t remaining = size;
     while (remaining > 0) {
@@ -47,7 +45,8 @@ bool NameKeyMgr::read_full(int fd, void* data, size_t size) {
     return true;
 }
 
-bool NameKeyMgr::save_master_key() {
+bool NameKeyMgr::save_master_key() 
+{
     FileRAII file(key_file_path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
     if (!file.valid()) return false;
 
@@ -169,9 +168,8 @@ NameKeyMgr::~NameKeyMgr() {
     if (!name_key.empty()) SecMemGuard::secure_memset(name_key.data(), 0, name_key.size());
 }
 
-// ============================================
+//************************************************
 // PersistCounter
-// ============================================
 
 bool PersistCounter::write_full(int fd, const void* data, size_t size) {
     const uint8_t* ptr = static_cast<const uint8_t*>(data);
@@ -292,7 +290,8 @@ bool PersistCounter::save_to_file_internal() {
     return success;
 }
 
-void PersistCounter::auto_save_loop() {
+void PersistCounter::auto_save_loop()
+{
     while (auto_save_running.load()) {
         std::unique_lock<std::mutex> lock(save_mutex);
         save_cv.wait_for(lock, std::chrono::milliseconds(AUTO_SAVE_INTERVAL_MS), [this]() {
@@ -344,7 +343,8 @@ uint64_t PersistCounter::get(const std::string& key) const {
 // NameObfus
 // ============================================
 
-std::string NameObfus::base64_url_encode(const std::string& data) {
+std::string NameObfus::base64_url_encode(const std::string& data) 
+{
     std::string encoded = Botan::base64_encode(reinterpret_cast<const uint8_t*>(data.data()), data.size());
     std::replace(encoded.begin(), encoded.end(), '+', '-');
     std::replace(encoded.begin(), encoded.end(), '/', '_');
@@ -352,7 +352,8 @@ std::string NameObfus::base64_url_encode(const std::string& data) {
     return encoded;
 }
 
-std::string NameObfus::base64_url_decode(const std::string& encoded) {
+std::string NameObfus::base64_url_decode(const std::string& encoded)
+{
     std::string base64 = encoded;
     std::replace(base64.begin(), base64.end(), '-', '+');
     std::replace(base64.begin(), base64.end(), '_', '/');
@@ -367,7 +368,8 @@ std::string NameObfus::base64_url_decode(const std::string& encoded) {
 }
 
 NameObfus::NameObfus(size_t cache_sz, const std::string& counter_file, const std::string& key_file)
-    : cache_size(cache_sz) {
+    : cache_size(cache_sz) 
+{
     key_manager = std::make_unique<NameKeyMgr>(key_file);
     if (key_manager->is_initialized()) name_key = key_manager->get_name_key();
     else name_key = SecureRandom::secure_random(32);
@@ -380,7 +382,8 @@ NameObfus::NameObfus(size_t cache_sz, const std::string& counter_file, const std
     }
 }
 
-NameObfus::~NameObfus() {
+NameObfus::~NameObfus() 
+{
     if (persistent_counter) persistent_counter->force_save();
     if (!name_key.empty()) {
         SecMemGuard::secure_memset(name_key.data(), 0, name_key.size());
@@ -409,7 +412,7 @@ std::string NameObfus::obfuscate_name(const std::string& original_name) {
         EncryptedName enc_name;
         enc_name.nonce.resize(16);
         std::memcpy(enc_name.nonce.data(), &counter, 8);
-        uint64_t random_part = SecureRandom::random_uint64();
+         uint64_t random_part = SecureRandom::random_uint64();
         std::memcpy(enc_name.nonce.data() + 8, &random_part, 8);
 
         cipher->set_iv(enc_name.nonce);
@@ -426,7 +429,7 @@ std::string NameObfus::obfuscate_name(const std::string& original_name) {
 
         {
             std::unique_lock<std::shared_mutex> lock(cache_mutex);
-            size_t idx = (cache_index++) % cache_size;
+             size_t idx = (cache_index++) % cache_size;
             name_cache[idx]->original = original_name;
             name_cache[idx]->obfuscated = result;
             name_cache[idx]->timestamp = std::chrono::steady_clock::now();
