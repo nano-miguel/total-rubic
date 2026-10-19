@@ -515,7 +515,6 @@ class AES256GCM {
 };
 
 class UniversalCipher {
-
     public:
     using LogCallback = std::function<void(univ_log::LogLevel level, univ_log::LogEvent event, const std::string& data)>;
     using ProgressCallback = std::function<void(size_t current, size_t total, const std::string& file)>;
@@ -526,7 +525,8 @@ class UniversalCipher {
         uint64_t total_time_ms = 0;
     };
     const Stats& getLastStats() const { return last_stats; }
-  private:
+  
+    private:
     SystemConfig config;
     KeyManager* keyManager;
     std::unique_ptr<NameObfus> name_obfuscator;
