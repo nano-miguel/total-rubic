@@ -19,6 +19,7 @@
 #include <iomanip>
 #include <fstream>
 #include <cstring>
+#include <unordered_map>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
@@ -118,6 +119,89 @@ private:
     std::string currentKeyName;
     inline static UnitEncryptorUI* instance = nullptr;
 
+    // =========================================================
+    // LA SOLUCIÓN SONARQUBE: Diccionario de Eventos (Map)
+    // =========================================================
+    struct EventData {
+        const char* key;
+        const char* color;
+    };
+
+    static const std::unordered_map<LogEvent, EventData>& getLogMap() {
+        static const std::unordered_map<LogEvent, EventData> map = {
+            { LogEvent::HeaderWriting, { "log_unit_header_writing", RESET } },
+            { LogEvent::HeaderWritten, { "log_unit_header_written", GREEN } },
+            { LogEvent::HeaderReadFailed, { "log_unit_header_read_failed", YELLOW } },
+            { LogEvent::HeaderRemoved, { "log_unit_header_removed", GREEN } },
+            { LogEvent::HeaderRestoring, { "log_unit_header_restoring", RESET } },
+            { LogEvent::HeaderRestored, { "log_unit_header_restored", GREEN } },
+            { LogEvent::HeaderRestoreFailed, { "log_unit_header_restore_failed", RED } },
+            { LogEvent::HeaderCleanFailed, { "log_unit_header_clean_failed", RED } },
+            { LogEvent::BackupSaved, { "log_unit_backup_saved", GREEN } },
+            { LogEvent::BackupSaveFailed, { "log_unit_backup_save_failed", YELLOW } },
+            { LogEvent::BackupLoaded, { "log_unit_backup_loaded", GREEN } },
+            { LogEvent::BackupLoadFailed, { "log_unit_backup_load_failed", RED } },
+            { LogEvent::BackupRemoved, { "log_unit_backup_removed", GREEN } },
+            { LogEvent::HeaderBackupAttempting, { "log_unit_header_backup_attempting", YELLOW } },
+            { LogEvent::HeaderCleanFsyncFailed, { "log_unit_header_clean_fsync_failed", RED } },
+            { LogEvent::HeaderCleanWriteFailed, { "log_unit_header_clean_write_failed", RED } },
+            { LogEvent::SaltGenerating, { "log_unit_salt_generating", RESET } },
+            { LogEvent::SaltGenerated, { "log_unit_salt_generated", GREEN } },
+            { LogEvent::SaltError, { "log_unit_salt_error", RED } },
+            { LogEvent::KeyDeriving, { "log_unit_key_deriving", RESET } },
+            { LogEvent::KeyDeriveError, { "log_unit_key_derive_error", RED } },
+            { LogEvent::KmacError, { "log_unit_kmac_error", RED } },
+            { LogEvent::KmacVerified, { "log_unit_kmac_verified", GREEN } },
+            { LogEvent::KmacFailed, { "log_unit_kmac_failed", RED } },
+            { LogEvent::KmacSizeError, { "log_unit_kmac_size_error", RED } },
+            { LogEvent::LegacyHeaderNoKdf, { "log_unit_legacy_header_no_kdf", YELLOW } },
+            { LogEvent::MasterKeyInvalid, { "log_unit_master_key_invalid", RED } },
+            { LogEvent::SystemDiskBlocked, { "log_unit_sys_disk_blocked", BRIGHT_RED } },
+            { LogEvent::UnitAlreadyEncrypted, { "log_unit_already_encrypted", YELLOW } },
+            { LogEvent::UnitNotEncrypted, { "log_unit_not_encrypted", YELLOW } },
+            { LogEvent::UnitMounted, { "log_unit_mounted", YELLOW } },
+            { LogEvent::DeviceOpenFailed, { "log_unit_device_open_failed", RED } },
+            { LogEvent::DeviceOpenRetry, { "log_unit_device_open_retry", YELLOW } },
+            { LogEvent::DeviceSizeFailed, { "log_unit_device_size_failed", RED } },
+            { LogEvent::DeviceTypeDetected, { "log_unit_device_type", RESET } },
+            { LogEvent::RequiresRoot, { "log_unit_requires_root", RED } },
+            { LogEvent::InvalidHeaderRegion, { "log_unit_invalid_header_region", RED } },
+            { LogEvent::ConfigAuto, { "log_unit_config_auto", RESET } },
+            { LogEvent::ConfigCustom, { "log_unit_config_custom", RESET } },
+            { LogEvent::ChunkSizeInfo, { "log_unit_chunk_size", RESET } },
+            { LogEvent::DataSizeInfo, { "log_unit_data_size", RESET } },
+            { LogEvent::ChunkCountInfo, { "log_unit_chunk_count", RESET } },
+            { LogEvent::Processing, { "log_unit_processing", RESET } },
+            { LogEvent::ProcessingComplete, { "log_unit_processing_complete", GREEN } },
+            { LogEvent::ProcessingStopped, { "log_unit_processing_stopped", YELLOW } },
+            { LogEvent::ChunkReadError, { "log_unit_chunk_read_error", RED } },
+            { LogEvent::ChunkProcessError, { "log_unit_chunk_process_error", RED } },
+            { LogEvent::ChunkWriteError, { "log_unit_chunk_write_error", RED } },
+            { LogEvent::FinalFsyncFailed, { "log_unit_final_fsync_failed", RED } },
+            { LogEvent::ProcessingFsyncFailed, { "log_unit_processing_fsync_failed", RED } },
+            { LogEvent::ReorderOverflow, { "log_unit_reorder_overflow", RED } },
+            { LogEvent::Mounting, { "log_unit_mounting", RESET } },
+            { LogEvent::Mounted, { "log_unit_mounted_ok", GREEN } },
+            { LogEvent::MountFailed, { "log_unit_mount_failed", RED } },
+            { LogEvent::Unmounting, { "log_unit_unmounting", RESET } },
+            { LogEvent::Unmounted, { "log_unit_unmounted", GREEN } },
+            { LogEvent::UnitMountedUnmounting, { "log_unit_unmounting", RESET } },
+            { LogEvent::UnitUnmountFailed, { "log_unit_unmount_failed", RED } },
+            { LogEvent::CleanupHeader, { "log_unit_cleanup_header", RESET } },
+            { LogEvent::CleanupBackup, { "log_unit_cleanup_backup", RESET } },
+            { LogEvent::FormatStart, { "log_unit_format_start", RESET } },
+            { LogEvent::FormatOk, { "log_unit_format_ok", GREEN } },
+            { LogEvent::FormatFailed, { "log_unit_format_failed", RED } },
+            { LogEvent::Sector0BackedUp, { "log_unit_s0_backedup", RESET } },
+            { LogEvent::Sector0Wiped, { "log_unit_s0_wiped", RESET } },
+            { LogEvent::Sector0Restored, { "log_unit_s0_restored", RESET } },
+            { LogEvent::Sector0WipeFailed, { "log_unit_sector0_wipe_failed", YELLOW } },
+            { LogEvent::Sector0RestoreFailed, { "log_unit_sector0_restore_failed", YELLOW } },
+            { LogEvent::Sector0ReadFailed, { "log_unit_sector0_read_failed", RED } },
+        };
+        return map;
+    }
+
     static void signalHandler(int signal) { exit(signal); }
     static void setupSignalHandlers() {
         signal(SIGINT, signalHandler);
@@ -143,125 +227,33 @@ private:
                   << "│" << RESET << "\n";
     }
 
+    // Busca en el diccionario. Cero switch.
     void onCoreLog(LogLevel level, LogEvent event, const std::string& data) {
         (void)level;
-        if (logHeaderEvents(event, data)) return;
-        if (logCryptoEvents(event, data)) return;
-        if (logDeviceEvents(event, data)) return;
-        if (logProcessEvents(event, data)) return;
-        if (logSectorEvents(event, data)) return;
-    }
-
-    bool logHeaderEvents(LogEvent event, const std::string& data) {
-        switch (event) {
-            case LogEvent::HeaderWriting: std::cout << TR().t("log_unit_header_writing") << std::endl; return true;
-            case LogEvent::HeaderWritten: std::cout << GREEN << TR().t("log_unit_header_written") << RESET << std::endl; return true;
-            case LogEvent::HeaderReadFailed: std::cout << YELLOW << TR().t("log_unit_header_read_failed") << RESET << std::endl; return true;
-            case LogEvent::HeaderVerified: if (data != "reading") std::cout << GREEN << TR().t("log_unit_header_verified", {data}) << RESET << std::endl; return true;
-            case LogEvent::HeaderRemoved: std::cout << GREEN << TR().t("log_unit_header_removed") << RESET << std::endl; return true;
-            case LogEvent::HeaderRestoring: std::cout << TR().t("log_unit_header_restoring") << std::endl; return true;
-            case LogEvent::HeaderRestored: std::cout << GREEN << TR().t("log_unit_header_restored") << RESET << std::endl; return true;
-            case LogEvent::HeaderRestoreFailed: std::cout << RED << TR().t("log_unit_header_restore_failed") << RESET << std::endl; return true;
-            case LogEvent::HeaderCleanFailed: std::cout << RED << TR().t("log_unit_header_clean_failed") << RESET << std::endl; return true;
-            case LogEvent::BackupSaved: std::cout << GREEN << TR().t("log_unit_backup_saved") << RESET << std::endl; return true;
-            case LogEvent::BackupSaveFailed: std::cout << YELLOW << TR().t("log_unit_backup_save_failed") << RESET << std::endl; return true;
-            case LogEvent::BackupLoaded: std::cout << GREEN << TR().t("log_unit_backup_loaded") << RESET << std::endl; return true;
-            case LogEvent::BackupLoadFailed: std::cout << RED << TR().t("log_unit_backup_load_failed") << RESET << std::endl; return true;
-            case LogEvent::BackupRemoved: std::cout << GREEN << TR().t("log_unit_backup_removed") << RESET << std::endl; return true;
-            case LogEvent::HeaderBackupAttempting: std::cout << YELLOW << TR().t("log_unit_header_backup_attempting") << RESET << std::endl; return true;
-            case LogEvent::HeaderCleanFsyncFailed: std::cout << RED << TR().t("log_unit_header_clean_fsync_failed") << RESET << std::endl; return true;
-            case LogEvent::HeaderCleanWriteFailed: std::cout << RED << TR().t("log_unit_header_clean_write_failed") << RESET << std::endl; return true;
-            default: return false;
+        
+        // Excepciones (casos especiales que tienen lógica propia)
+        if (event == LogEvent::KeyDerived && !data.empty()) {
+            std::cout << YELLOW << "  ⚠ " << data << RESET << std::endl;
+            return;
         }
-    }
-
-    bool logCryptoEvents(LogEvent event, const std::string& data) {
-        switch (event) {
-            case LogEvent::SaltGenerating: std::cout << TR().t("log_unit_salt_generating") << std::endl; return true;
-            case LogEvent::SaltGenerated: std::cout << GREEN << TR().t("log_unit_salt_generated") << RESET << std::endl; return true;
-            case LogEvent::SaltError: std::cout << RED << TR().t("log_unit_salt_error") << RESET << std::endl; return true;
-            case LogEvent::KeyDeriving: std::cout << TR().t("log_unit_key_deriving") << std::endl; return true;
-            case LogEvent::KeyDerived: 
-                if (data.empty()) std::cout << GREEN << TR().t("log_unit_key_derived") << RESET << std::endl;
-                else std::cout << YELLOW << "  ⚠ " << data << RESET << std::endl; 
-                return true;
-            case LogEvent::KeyDeriveError: std::cout << RED << TR().t("log_unit_key_derive_error") << RESET << std::endl; return true;
-            case LogEvent::KmacCalculating: 
-                if (data == "verificando") std::cout << TR().t("log_unit_kmac_verify") << std::endl;
-                else std::cout << TR().t("log_unit_kmac_calc") << std::endl; 
-                return true;
-            case LogEvent::KmacError: std::cout << RED << TR().t("log_unit_kmac_error", {data}) << RESET << std::endl; return true;
-            case LogEvent::KmacVerified: std::cout << GREEN << TR().t("log_unit_kmac_verified") << RESET << std::endl; return true;
-            case LogEvent::KmacFailed: std::cout << RED << TR().t("log_unit_kmac_failed") << RESET << std::endl; return true;
-            case LogEvent::KmacSizeError: std::cout << RED << TR().t("log_unit_kmac_size_error") << RESET << std::endl; return true;
-            case LogEvent::LegacyHeaderNoKdf: std::cout << YELLOW << "  ⚠ " << TR().t("log_unit_legacy_header_no_kdf") << RESET << std::endl; return true;
-            case LogEvent::MasterKeyInvalid: std::cout << RED << TR().t("log_unit_master_key_invalid", {data}) << RESET << std::endl; return true;
-            default: return false;
+        if (event == LogEvent::KmacCalculating) {
+            std::cout << TR().t(data == "verificando" ? "log_unit_kmac_verify" : "log_unit_kmac_calc") << std::endl;
+            return;
         }
-    }
-
-    bool logDeviceEvents(LogEvent event, const std::string& data) {
-        switch (event) {
-            case LogEvent::SystemDiskBlocked: std::cout << BRIGHT_RED << "\n" << TR().t("log_unit_sys_disk_blocked") << RESET << std::endl; return true;
-            case LogEvent::UnitAlreadyEncrypted: std::cout << YELLOW << TR().t("log_unit_already_encrypted") << RESET << std::endl; return true;
-            case LogEvent::UnitNotEncrypted: std::cout << YELLOW << TR().t("log_unit_not_encrypted") << RESET << std::endl; return true;
-            case LogEvent::UnitMounted: std::cout << YELLOW << TR().t("log_unit_mounted", {data}) << RESET << std::endl; return true;
-            case LogEvent::DeviceOpenFailed: std::cout << RED << TR().t("log_unit_device_open_failed", {data}) << RESET << std::endl; return true;
-            case LogEvent::DeviceOpenRetry: std::cout << YELLOW << TR().t("log_unit_device_open_retry", {data}) << RESET << std::endl; return true;
-            case LogEvent::DeviceSizeFailed: std::cout << RED << TR().t("log_unit_device_size_failed", {data}) << RESET << std::endl; return true;
-            case LogEvent::DeviceTypeDetected: std::cout << TR().t("log_unit_device_type", {data}) << std::endl; return true;
-            case LogEvent::RequiresRoot: std::cout << RED << TR().t("log_unit_requires_root") << RESET << std::endl; return true;
-            case LogEvent::InvalidHeaderRegion: std::cout << RED << TR().t("log_unit_invalid_header_region") << RESET << std::endl; return true;
-            default: return false;
+        if (event == LogEvent::IoModeInfo) {
+            std::cout << (data == "direct" ? TR().t("log_unit_io_direct") : TR().t("log_unit_io_normal")) << std::endl;
+            return;
         }
-    }
-
-    bool logProcessEvents(LogEvent event, const std::string& data) {
-        switch (event) {
-            case LogEvent::ConfigAuto: std::cout << TR().t("log_unit_config_auto", {data}) << std::endl; return true;
-            case LogEvent::ConfigCustom: std::cout << TR().t("log_unit_config_custom", {data}) << std::endl; return true;
-            case LogEvent::ChunkSizeInfo: std::cout << TR().t("log_unit_chunk_size", {data}) << std::endl; return true;
-            case LogEvent::IoModeInfo: std::cout << (data == "direct" ? TR().t("log_unit_io_direct") : TR().t("log_unit_io_normal")) << std::endl; return true;
-            case LogEvent::DataSizeInfo: std::cout << TR().t("log_unit_data_size", {StorUnit::formatBytes(std::stoull(data))}) << std::endl; return true;
-            case LogEvent::ChunkCountInfo: std::cout << TR().t("log_unit_chunk_count", {data}) << std::endl; return true;
-            case LogEvent::Processing: std::cout << TR().t("log_unit_processing") << std::endl; return true;
-            case LogEvent::ProcessingComplete: std::cout << GREEN << TR().t("log_unit_processing_complete") << RESET << std::endl; return true;
-            case LogEvent::ProcessingFailed: 
-                std::cout << RED << TR().t("log_unit_processing_failed"); 
-                if (!data.empty()) std::cout << " (" << data << ")"; 
-                std::cout << RESET << std::endl; return true;
-            case LogEvent::ProcessingStopped: std::cout << YELLOW << TR().t("log_unit_processing_stopped") << RESET << std::endl; return true;
-            case LogEvent::ChunkReadError: std::cout << RED << TR().t("log_unit_chunk_read_error", {data}) << RESET << std::endl; return true;
-            case LogEvent::ChunkProcessError: std::cout << RED << TR().t("log_unit_chunk_process_error", {data}) << RESET << std::endl; return true;
-            case LogEvent::ChunkWriteError: std::cout << RED << TR().t("log_unit_chunk_write_error", {data}) << RESET << std::endl; return true;
-            case LogEvent::FinalFsyncFailed: std::cout << RED << TR().t("log_unit_final_fsync_failed") << RESET << std::endl; return true;
-            case LogEvent::ProcessingFsyncFailed: std::cout << RED << TR().t("log_unit_processing_fsync_failed") << RESET << std::endl; return true;
-            case LogEvent::ReorderOverflow: std::cout << RED << TR().t("log_unit_reorder_overflow") << RESET << std::endl; return true;
-            case LogEvent::Mounting: std::cout << TR().t("log_unit_mounting", {data}) << std::endl; return true;
-            case LogEvent::Mounted: std::cout << GREEN << TR().t("log_unit_mounted_ok", {data}) << RESET << std::endl; return true;
-            case LogEvent::MountFailed: std::cout << RED << TR().t("log_unit_mount_failed", {data}) << RESET << std::endl; return true;
-            case LogEvent::Unmounting: std::cout << TR().t("log_unit_unmounting", {data}) << std::endl; return true;
-            case LogEvent::Unmounted: std::cout << GREEN << TR().t("log_unit_unmounted") << RESET << std::endl; return true;
-            case LogEvent::UnitMountedUnmounting: std::cout << TR().t("log_unit_unmounting", {data}) << std::endl; return true;
-            case LogEvent::UnitUnmountFailed: std::cout << RED << TR().t("log_unit_unmount_failed") << RESET << std::endl; return true;
-            case LogEvent::CleanupHeader: std::cout << TR().t("log_unit_cleanup_header") << std::endl; return true;
-            case LogEvent::CleanupBackup: std::cout << TR().t("log_unit_cleanup_backup") << std::endl; return true;
-            case LogEvent::FormatStart: std::cout << TR().t("log_unit_format_start", {data}) << std::endl; return true;
-            case LogEvent::FormatOk: std::cout << GREEN << TR().t("log_unit_format_ok") << RESET << std::endl; return true;
-            case LogEvent::FormatFailed: std::cout << RED << TR().t("log_unit_format_failed", {data}) << RESET << std::endl; return true;
-            default: return false;
+        if (event == LogEvent::ProcessingFailed && !data.empty()) {
+            std::cout << RED << TR().t("log_unit_processing_failed") << " (" << data << ")" << RESET << std::endl;
+            return;
         }
-    }
 
-    bool logSectorEvents(LogEvent event, const std::string& data) {
-        switch (event) {
-            case LogEvent::Sector0BackedUp: std::cout << TR().t("log_unit_s0_backedup") << std::endl; return true;
-            case LogEvent::Sector0Wiped: std::cout << TR().t("log_unit_s0_wiped") << RESET << std::endl; return true;
-            case LogEvent::Sector0Restored: std::cout << TR().t("log_unit_s0_restored") << RESET << std::endl; return true;
-            case LogEvent::Sector0WipeFailed: std::cout << YELLOW << "  ⚠ " << TR().t("log_unit_sector0_wipe_failed") << RESET << std::endl; return true;
-            case LogEvent::Sector0RestoreFailed: std::cout << YELLOW << "  ⚠ " << TR().t("log_unit_sector0_restore_failed") << RESET << std::endl; return true;
-            case LogEvent::Sector0ReadFailed: std::cout << RED << TR().t("log_unit_sector0_read_failed") << RESET << std::endl; return true;
-            default: return false;
+        // Búsqueda en el diccionario
+        auto it = getLogMap().find(event);
+        if (it != getLogMap().end()) {
+            std::string msg = TR().t(it->second.key, {data});
+            std::cout << it->second.color << msg << RESET << std::endl;
         }
     }
 
@@ -484,7 +476,7 @@ private:
 
         bool ok;
         if (delegating) {
-            // ELEVACIÓN: Se hace en el Core, no en la UI. La UI solo espera.
+            // El Core hace el sudo y maneja /dev/shm. La UI solo espera.
             ok = core_.executeElevatedOp(unit, encrypt, master_key);
         } else {
             core_.setProgressCallback([&progress_bar](uint64_t cur, uint64_t total, double speed) {
