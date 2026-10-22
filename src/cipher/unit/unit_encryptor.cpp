@@ -297,9 +297,12 @@ private:
         return workers;
     }
 
-    std::thread spawn_writer(LimQueue<PipeChunk>& write_q, size_t chunk_size, uint64_t total_chunks, std::atomic<uint64_t>& done, std::atomic<uint64_t>& bytes_done, std::atomic<bool>& err) {
+    std::thread spawn_writer(LimQueue<PipeChunk>& write_q, size_t chunk_size, uint64_t total_chunks,
+        std::atomic<uint64_t>& done,
+        std::atomic<uint64_t>& bytes_done,
+        std::atomic<bool>& err) {
         const size_t kMaxReorder = static_cast<size_t>(ctx_.cfg.num_threads) * 4 + 64;
-        return std::thread([this, &write_q, chunk_size, total_chunks, &done, &bytes_done, &err, kMaxReorder]() {
+    return std::thread([this, &write_q, chunk_size, total_chunks, &done, &bytes_done, &err, kMaxReorder]() {
             PipeChunk chunk(chunk_size, ctx_.cfg.use_direct_io);
             uint64_t expected = 0;
             std::vector<PipeChunk> reorder;
