@@ -2,25 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 project(RUBIC-A VERSION 0.1 LANGUAGES CXX)
 
 # =========================
-# SANITY CHECK: ruta del proyecto
-# =========================
-string(REGEX MATCH "[][(){}&;|<>$\\\\`'\"!*? \t]" _rubic_badchar "${CMAKE_SOURCE_DIR}")
-if(_rubic_badchar)
-    message(FATAL_ERROR
-        "\n"
-        "╔══════════════════════════════════════════════════════════════╗\n"
-        "║  RUTA INVÁLIDA PARA EL PROYECTO                              ║\n"
-        "╠══════════════════════════════════════════════════════════════╣\n"
-        "║  La carpeta del proyecto contiene el carácter: '${_rubic_badchar}'\n"
-        "║  Ruta actual: ${CMAKE_SOURCE_DIR}\n"
-        "║                                                              ║\n"
-        "║  Esto rompe el build de RPM (los .spec son scripts shell).   ║\n"
-        "║  Renombra la carpeta sin: ) ( & ; | < > $ \\ ` ' \" ! * ? [ ] { } ni espacios\n"
-        "║                                                              ║\n"
-        "╚══════════════════════════════════════════════════════════════╝\n")
-endif()
-
-# =========================
 # ESTÁNDAR C++
 # =========================
 set(CMAKE_CXX_STANDARD 20)
@@ -99,6 +80,24 @@ endif()
 # =========================
 # SOURCES
 # =========================
+# Estructura actual (GLOB_RECURSE escanea todas las subcarpetas):
+#   src/
+#   ├── main.cpp
+#   ├── rubic_core.h
+#   ├── hardware_detect.h
+#   ├── cipher/
+#   │   ├── unit_encryptor.h
+#   │   ├── universal_cipher.h
+#   │   ├── universal_cipher.cpp
+#   │   ├── unit/ ...
+#   │   └── universal/ ...
+#   ├── keygest/
+#   │   ├── key_manager.cpp
+#   │   └── key_crypto.cpp
+#   ├── share/
+#   │   └── share_manager.cpp
+#   └── ui/
+#       └── *.h
 file(GLOB_RECURSE RUBIC_SOURCES CONFIGURE_DEPENDS
     ${CMAKE_SOURCE_DIR}/src/*.cpp
 )
@@ -109,6 +108,10 @@ endif()
 
 list(LENGTH RUBIC_SOURCES RUBIC_SOURCES_COUNT)
 message(STATUS "Fuentes encontradas: ${RUBIC_SOURCES_COUNT}")
+foreach(_src ${RUBIC_SOURCES})
+    file(RELATIVE_PATH _rel "${CMAKE_SOURCE_DIR}" "${_src}")
+    message(STATUS "  · ${_rel}")
+endforeach()
 
 add_executable(RUBIC-A ${RUBIC_SOURCES})
 
@@ -178,26 +181,18 @@ endif()
 # =========================================================
 # ★★★ OPTIMIZACIÓN Y DETECCIÓN AUTOMÁTICA DE AVX-512/AVX2 ★★★
 # =========================================================
-# El código de unit_encryptor.cpp usa:
-#     #if defined(AVX512F)   y   #if defined(AVX2)
-# pero "-march=native" solo define __AVX512F__ / __AVX2__ (con guiones bajos).
-# Por eso detectamos qué extensiones están disponibles y definimos las macros
-# AVX512F / AVX2 manualmente. Así el bloque SIMD SÍ se compila.
-# =========================================================
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceCompiles)
 
 set(_rubic_opt_flags "")
 set(_rubic_simd_defs "")
 
-# 1) Intentamos -march=native (lo ideal en x86_64)
 check_cxx_compiler_flag("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
 
 if(COMPILER_SUPPORTS_MARCH_NATIVE AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|i[3-6]86")
     message(STATUS "Habilitando instrucciones nativas del CPU (-march=native)")
     set(_rubic_opt_flags "-march=native")
 
-    # 2) Probamos si con -march=native podemos compilar código AVX-512
     set(CMAKE_REQUIRED_FLAGS "-march=native")
 
     check_cxx_source_compiles("
@@ -237,7 +232,6 @@ if(COMPILER_SUPPORTS_MARCH_NATIVE AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd
     endif()
 
 else()
-    # Fallback para CPUs no-x86 o compiladores sin -march=native
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
         message(STATUS "Arquitectura ARM64: usando NEON (auto-vectorización del compilador)")
     else()
@@ -245,14 +239,12 @@ else()
     endif()
 endif()
 
-# Aplicar flags de optimización por configuración
 target_compile_options(RUBIC-A PRIVATE
     $<$<CONFIG:Release>:-O3 -flto -DNDEBUG ${_rubic_opt_flags}>
     $<$<CONFIG:Debug>:-O0 -g3 -ggdb>
     $<$<CONFIG:RelWithDebInfo>:-O2 -g -DNDEBUG ${_rubic_opt_flags}>
 )
 
-# ★★★ CLAVE: definir las macros que el código espera ★★★
 if(_rubic_simd_defs)
     target_compile_definitions(RUBIC-A PRIVATE ${_rubic_simd_defs})
 endif()
@@ -352,7 +344,7 @@ set(CPACK_PACKAGE_CONTACT           "wallace")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "RUBIC-A encrypted system tool")
 set(CPACK_PACKAGE_DESCRIPTION
     "RUBIC-A: cifrado de unidades y archivos con AES-256 (XTS/GCM) y firmas post-cuánticas via Botan 3.")
-set(CPACK_PACKAGE_HOMEPAGE_URL      "https://example.com/rubic-a")
+set(CPACK_PACKAGE_HOMEPAGE_URL      "https://rubic.online")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "rubic-a")
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/LICENSE")
@@ -390,7 +382,7 @@ set(CPACK_RPM_PACKAGE_ARCHITECTURE  "${_rubic_arch_rpm}")
 set(CPACK_RPM_PACKAGE_LICENSE       "GPL-3.0-or-later")
 set(CPACK_RPM_PACKAGE_GROUP         "Applications/System")
 set(CPACK_RPM_PACKAGE_VENDOR        "wallace")
-set(CPACK_RPM_PACKAGE_URL           "https://example.com/rubic-a")
+set(CPACK_RPM_PACKAGE_URL           "https://rubic.online")
 set(CPACK_RPM_PACKAGE_SUMMARY       "RUBIC-A encrypted system tool")
 set(CPACK_RPM_PACKAGE_DESCRIPTION
     "RUBIC-A: cifrado de unidades y archivos con AES-256 (XTS/GCM) y firmas post-cuánticas via Botan 3.")
