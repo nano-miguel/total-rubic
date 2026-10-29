@@ -89,6 +89,7 @@ class FileRAII {
     int fd;
     std::string path;
     bool is_open;
+
   public:
     FileRAII() : fd(-1), is_open(false) {}
     explicit FileRAII(const std::string& file_path, int flags, mode_t mode = 0644)
@@ -127,7 +128,8 @@ class MMapRAII {
     size_t size;
     int fd;
     bool is_mapped;
-  public:
+  
+public:
     MMapRAII() : data(nullptr), size(0), fd(-1), is_mapped(false) {}
     ~MMapRAII() { unmap(); }
     bool map(int file_fd, size_t file_size, int prot = PROT_READ, int flags = MAP_PRIVATE) {
@@ -163,7 +165,8 @@ class MemoryLockRAII {
     void* ptr;
     size_t size;
     bool locked;
-  public:
+ 
+public:
     MemoryLockRAII(void* memory_ptr, size_t memory_size) : ptr(memory_ptr), size(memory_size), locked(false) { lock(); }
     ~MemoryLockRAII() { unlock(); }
     bool lock() {
@@ -254,8 +257,8 @@ class RateLimiter {
     void setLimits(size_t max_files, size_t max_bytes);
 };
 
-template <typename T> class WorkQueue {
-  private:
+template <typename T> class WorkQueue {  
+private:
     std::deque<T> queue;
     std::mutex mutex;
     std::condition_variable not_empty;
@@ -263,7 +266,8 @@ template <typename T> class WorkQueue {
     std::atomic<bool> stopped{false};
     size_t max_size;
     std::atomic<size_t> queue_size{0};
-  public:
+  
+public:
     WorkQueue(size_t max_sz = 64) : max_size(max_sz) {}
     ~WorkQueue() { stop(); }
     void push(T item) {
@@ -333,8 +337,8 @@ class NameKeyMgr {
     bool is_initialized() const { return initialized && name_key.size() == 32; }
 };
 
-class PersistCounter {
-  private:
+class PersistCounter {  
+private:
     std::map<std::string, uint64_t> counters;
     mutable std::shared_timed_mutex counters_mutex;
     std::string storage_file;
@@ -352,7 +356,8 @@ class PersistCounter {
     void load_from_file();
     bool save_to_file_internal();
     void auto_save_loop();
-  public:
+  
+public:
     explicit PersistCounter(const std::string& file_path);
     ~PersistCounter();
     uint64_t get_and_increment(const std::string& key);
@@ -400,7 +405,8 @@ class NameObfus {
             return result;
         }
     };
-  public:
+  
+public:
     NameObfus(size_t cache_sz = 1024,
               const std::string& counter_file = ".cipher_counters.dat",
               const std::string& key_file = ".cipher_namekey.dat");
@@ -433,7 +439,8 @@ class AES256GCM {
     bool process_with_mmap_wrapper(const std::string& inputPath, const std::string& outputPath, bool encryptMode);
     bool process_single_file_with_retry(const std::string& inputPath, const std::string& outputPath, bool encryptMode);
     void file_worker_function();
-  public:
+
+public:
     AES256GCM(const uint8_t* key_data, size_t key_len, size_t num_threads, size_t queue_sz, const SystemConfig& cfg);
     ~AES256GCM();
     void setRateLimits(size_t max_files, size_t max_bytes);
@@ -461,7 +468,8 @@ class UniversalCipher {
         uint64_t total_time_ms = 0;
     };
     const Stats& getLastStats() const { return last_stats; }
-  private:
+
+private:
     SystemConfig config;
     KeyManager* keyManager;
     std::unique_ptr<NameObfus> name_obfuscator;
@@ -490,7 +498,8 @@ class UniversalCipher {
     bool encryptFileInPlace(const std::string& inputPath);
     bool decryptFileInPlace(const std::string& inputPath);
     bool processPath(const std::string& path, bool encryptMode);
-  public:
+  
+public:
     UniversalCipher();
     ~UniversalCipher();
     void setLogCallback(LogCallback cb) { log_cb_ = std::move(cb); }
