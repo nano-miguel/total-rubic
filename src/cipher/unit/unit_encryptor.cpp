@@ -24,12 +24,10 @@
 #endif
 
 #if defined(__x86_64__) || defined(__i386__)
-  #include <immintrin.h>
+#include <immintrin.h>
 #endif
 
-// ============================================
 // Helpers de I/O Segura + RAII para O_DIRECT
-// ============================================
 
 namespace {
 
@@ -91,9 +89,7 @@ static bool read_enc_header(int fd, EncUnitHdr& out) {
         && out.isValid();
 }
 
-// ============================================
 // AlignBuf
-// ============================================
 
 AlignBuf::AlignBuf(size_t size) : data_ptr(nullptr), size_bytes(size) {
     if (posix_memalign(&data_ptr, ALIGNMENT, size) != 0) throw std::bad_alloc();
@@ -131,9 +127,7 @@ uint8_t* AlignBuf::data() { return static_cast<uint8_t*>(data_ptr); }
 const uint8_t* AlignBuf::data() const { return static_cast<const uint8_t*>(data_ptr); }
 size_t AlignBuf::size() const { return size_bytes; }
 
-// ============================================
 // SpeedMtr
-// ============================================
 
 SpeedMtr::SpeedMtr() { reset(); }
 void SpeedMtr::addBytes(uint64_t b) { total_bytes += b; }
@@ -163,9 +157,7 @@ void SpeedMtr::reset() {
     current_speed = peak_speed = 0;
 }
 
-// ============================================
 // StorUnit
-// ============================================
 
 std::string StorUnit::formatBytes(uint64_t bytes) {
     const char* s[] = {"B", "KB", "MB", "GB", "TB"};
@@ -182,9 +174,7 @@ std::string StorUnit::getSafeFSType() const {
     return std::string(fs_info.fstype);
 }
 
-// ============================================================
 // DataPipeline
-// ============================================================
 
 namespace {
 
@@ -301,10 +291,12 @@ private:
         std::atomic<uint64_t>& done,
         std::atomic<uint64_t>& bytes_done,
         std::atomic<bool>& err) {
+      
         const size_t kMaxReorder = static_cast<size_t>(ctx_.cfg.num_threads) * 4 + 64;
-    return std::thread([this, &write_q, chunk_size, total_chunks, &done, &bytes_done, &err, kMaxReorder]() {
-            PipeChunk chunk(chunk_size, ctx_.cfg.use_direct_io);
-            uint64_t expected = 0;
+        return std::thread([this, &write_q, chunk_size, total_chunks, &done, &bytes_done, &err, kMaxReorder]() {
+            
+          PipeChunk chunk(chunk_size, ctx_.cfg.use_direct_io);
+          uint64_t expected = 0;
             std::vector<PipeChunk> reorder;
             while (!err && !ctx_.stop_requested && expected < total_chunks) {
                 if (!write_q.pop(chunk)) break;
@@ -490,9 +482,7 @@ public:
 
 } // anonymous namespace
 
-// ============================================
 // UnitEncryptor
-// ============================================
 
 UnitEncryptor::UnitEncryptor() : last_refresh(0) {
     refreshUnits();
@@ -900,9 +890,7 @@ bool UnitEncryptor::restoreHeader(const StorUnit& unit, const Botan::secure_vect
     return true;
 }
 
-// ========================================================================
 // SISTEMA OPERATIVO Y PRIVILEGIOS (Core puro, sin traducciones)
-// ========================================================================
 
 int UnitEncryptor::safeExec(const std::vector<std::string>& args, bool need_sudo) {
     if (args.empty()) return -1;
@@ -1011,9 +999,7 @@ bool UnitEncryptor::executeElevatedOp(const StorUnit& unit, bool encrypt, const 
     return WEXITSTATUS(status) == 0;
 }
 
-// ========================================================================
 // WORKER CLI (El --unit-op, aquí se usa "sudo" y texto crudo)
-// ========================================================================
 
 int UnitEncryptor::tryRunAsWorker(int argc, char* argv[]) {
     if (argc < 2) return -1;
@@ -1054,7 +1040,7 @@ int UnitEncryptor::tryRunAsWorker(int argc, char* argv[]) {
 
     UnitEncryptor enc;
 
-    // Callbacks crudos en consola (sin TR())
+    // Callbacks crudos en consola 
     enc.setLogCallback([](LogLevel level, LogEvent event, const std::string& data) {
         std::string prefix;
         switch (level) {
