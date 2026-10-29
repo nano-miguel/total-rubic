@@ -710,7 +710,6 @@ class UserMgr {
         if (FileUtil::exists(mast_key_path)) {
             auto enc_key = FileUtil::read_all(mast_key_path);
             if (enc_key.size() >= SALT_SIZE + IV_SIZE) {
-            
                 auto sys_key = Crypto::get_system_key("SYSTEM_ROOT");
                 auto decrypted = Crypto::aes_gcm_dec(enc_key, sys_key);
 
