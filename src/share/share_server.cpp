@@ -3,10 +3,7 @@
 
 #include "share_manager.h"
 
-// ============================================
 // SERVIDOR KEM (Handshake inicial)
-// ============================================
-
 void ShareManager::startKemSrv() {
     kem_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (kem_sock < 0)
@@ -134,7 +131,7 @@ void ShareManager::handleKemConn(int cli_sock, const std::string& cli_ip) {
             safeSend(cli_sock, &zero, sizeof(zero));
         }
 
-        // 3. Recibir Kyber y verificar
+        // Recibir Kyber y verificar
         size_t rem_kyber_len;
         safeRecv(cli_sock, &rem_kyber_len, sizeof(rem_kyber_len));
         if (rem_kyber_len == 0 || rem_kyber_len > 65536) {
@@ -172,7 +169,7 @@ void ShareManager::handleKemConn(int cli_sock, const std::string& cli_ip) {
             return;
         }
 
-        // 4. Enviar Kyber y Firma
+        //  Enviar Kyber y Firma
         std::string kyber_pem = Botan::X509::PEM_encode(*kyber_pub_key);
         size_t kyber_len = kyber_pem.size();
         safeSend(cli_sock, &kyber_len, sizeof(kyber_len));
@@ -191,7 +188,7 @@ void ShareManager::handleKemConn(int cli_sock, const std::string& cli_ip) {
             safeSend(cli_sock, &zero, sizeof(zero));
         }
 
-        // 5. Desencapsular KEM
+        //  Desencapsular KEM
         size_t enc_len;
         safeRecv(cli_sock, &enc_len, sizeof(enc_len));
 
@@ -242,9 +239,7 @@ void ShareManager::handleKemConn(int cli_sock, const std::string& cli_ip) {
     }
 }
 
-// ============================================
-// SERVIDOR DE TRANSFERENCIA (Archivos)
-// ============================================
+// SERVIDOR DE TRANSFERENCIA (Archivo)
 
 void ShareManager::startXferSrv() {
     xfer_sock = socket(AF_INET, SOCK_STREAM, 0);
