@@ -12,7 +12,6 @@
 #include <cstdlib>
 #include <cstring>
 
-// ============================================================
 // KeyInfo — ciclo de vida en memoria
 
 KeyInfo::KeyInfo()
@@ -82,7 +81,6 @@ KeyInfo::~KeyInfo() {
     // access_code) ya está wipeado al destruirse esos miembros.
 }
 
-// ============================================================
 // KeyManager — helpers de rutas y permisos
 
 std::string KeyManager::getKeysFilePath() const {
@@ -148,7 +146,6 @@ bool KeyManager::setFilePermissions(const std::string& filepath) const {
     return chmod(filepath.c_str(), 0600) == 0;
 }
 
-// ============================================================
 // KeyManager — persistencia (delega en key_persist)
 
 bool KeyManager::saveKeysToFile() {
