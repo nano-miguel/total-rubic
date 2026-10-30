@@ -134,8 +134,8 @@ bool KeyManager::ensureUsersDirectory() const {
     }
     struct stat buffer;
     if (stat(usersDir.c_str(), &buffer) == 0) {
-        if ((buffer.st_mode & 0777) != 0700) {
-            chmod(usersDir.c_str(), 0700);
+    if ((buffer.st_mode & 0777) != 0700) {
+        chmod(usersDir.c_str(), 0700);
         }
         return true;
     }
