@@ -1,5 +1,4 @@
 /*
- * RUBIC-A 
  * cipher/unit/devdetect.cpp
  */
 
