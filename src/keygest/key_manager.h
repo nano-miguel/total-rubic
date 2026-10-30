@@ -1,6 +1,5 @@
-// keygest/key_manager.h - 0.1 alpha
-// Lógica pura del gestor de claves.
-// rubic gpl3v
+// keygest/key_manager.h 
+// Lógica  del gestor de claves.
 #ifndef KEYGEST_KEY_MANAGER_H
 #define KEYGEST_KEY_MANAGER_H
 
@@ -239,11 +238,11 @@ public:
     }
 };
 
-// ============================================================
+/* 
 // Persistencia en disco (implementado en key_pipeline.cpp)
 //   save: serialize → compress(zlib) → encrypt(Argon2id+GCM) → write atómico
 //   load: read → decrypt → decompress → deserialize
-// ============================================================
+*/ 
 namespace key_persist {
 bool save(const std::map<std::string, KeyInfo>& keys,
           const std::string& filepath,
