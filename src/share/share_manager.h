@@ -1,6 +1,5 @@
-// share/share_manager.h - 0.1 alpha
+// share/share_manager.h 
 // Lógica pura de compartir archivos. CERO cout/cerr. Todo por callbacks.
-// La UI vive en ui/share_manager_ui.h
 
 #ifndef SHARE_MANAGER_H
 #define SHARE_MANAGER_H
@@ -69,9 +68,6 @@
 const size_t CHUNK_SIZE = 65536; // tamaño de bloques para transferir archivos
 const int SOCK_TIMEOUT = 30;
 
-// LIMPIEZA DE MEMORIA
-// **************************************
-
 namespace SecUtil {
 inline void secure_z(void* ptr, size_t len) {
     if (ptr && len > 0) {
@@ -90,7 +86,7 @@ template <typename T> inline void secure_clear(T& container) {
 }
 } // namespace SecUtil
 
-// ▼▼▼ NUEVO: eventos estructurados del share ▼▼▼
+// eventos estructurados del share 
 namespace share_log {
 
 enum class LogLevel {
@@ -132,9 +128,7 @@ enum class LogEvent {
 };
 
 } // namespace share_log
-// ▲▲▲ NUEVO ▲▲▲
 
-// ********************************************************
 // FUNCIONES AUXILIARES
 
 inline std::string getHome() {
@@ -145,11 +139,13 @@ inline std::string getHome() {
             return std::string(pw->pw_dir);
     }
     const char* home = getenv("HOME");
+    
     if (home)
-        return std::string(home);
+    return std::string(home);
     struct passwd* pw = getpwuid(getuid());
+    
     if (pw)
-        return std::string(pw->pw_dir);
+    return std::string(pw->pw_dir);
     return "/tmp";
 }
 
@@ -165,13 +161,12 @@ inline std::string getDlFolder() {
     return downloads;
 }
 
-// ********************************************************
 // Función  para crear directorios recursivamente
 
 inline bool create_dir_recursive(const std::string& path) {
     struct stat st;
     if (stat(path.c_str(), &st) == 0)
-        return true;
+    return true;
 
     std::string current_path;
     std::stringstream ss(path);
@@ -195,7 +190,6 @@ inline bool create_dir_recursive(const std::string& path) {
     return true;
 }
 
-// ***********************************
 // ESTRUCTURA DE SESIÓN
 
 struct ShareSess {
@@ -227,34 +221,26 @@ struct ShareSess {
     }
 };
 
-// *************************************************
-// clase central del ShareManager (lógica pura)
+// clase central del ShareManager 
 
 class ShareManager {
   public:
-    // ============================================================
-    // Callbacks (toda la presentación vive en la UI)
-    // ============================================================
-    // ▼▼▼ Firma actualizada con eventos estructurados ▼▼▼
+    // Callbacks 
     using LogCallback =
-        std::function<void(share_log::LogLevel level, share_log::LogEvent event, const std::string& data)>;
-    // ▲▲▲
+    std::function<void(share_log::LogLevel level, share_log::LogEvent event, const std::string& data)>;
+    
     using TrustPromptCallback = std::function<bool(const std::string& user, const std::string& fprint, bool is_server)>;
     using SessionCallback = std::function<void(const std::string& rem_user, const std::string& rem_ip)>;
     using FileRecvCallback = std::function<void(const std::string& filename, size_t bytes, bool ok)>;
     using FileSendCallback = std::function<void(const std::string& filename, size_t current, size_t total, bool ok)>;
-
-    // ============================================================
+    
     // Ciclo de vida
-    // ============================================================
     ShareManager();
     ~ShareManager();
     ShareManager(const ShareManager&) = delete;
     ShareManager& operator=(const ShareManager&) = delete;
-
-    // ============================================================
+    
     // Callbacks
-    // ============================================================
     void setLogCallback(LogCallback cb) {
         log_cb_ = std::move(cb);
     }
@@ -271,9 +257,7 @@ class ShareManager {
         file_send_cb_ = std::move(cb);
     }
 
-    // ============================================================
     // Identidad
-    // ============================================================
     void setUsername(const std::string& name);
     void setIdentity(const std::vector<uint8_t>& pub_key, const std::vector<uint8_t>& priv_key, const std::string& fp);
 
@@ -287,9 +271,8 @@ class ShareManager {
         return username;
     }
 
-    // ============================================================
     // Red / Puertos
-    // ============================================================
+
     std::string getCurrentIP();
     static bool parseAddress(const std::string& input, std::string& addr, int& port);
 
@@ -306,40 +289,28 @@ class ShareManager {
         xfer_port = p;
     }
 
-    // ============================================================
     // TOFU / Trust
-    // ============================================================
     std::vector<std::string> getTrustedFingerprints() const;
     bool addTrustedFingerprint(const std::string& fprint);
     bool removeTrustedFingerprint(const std::string& fprint);
     bool isTrusted(const std::string& fprint) const;
-
-    // ============================================================
     // Enviar
-    // ============================================================
     bool sendFiles(const std::vector<std::string>& file_paths, const std::string& rem_addr, int rem_port);
-
-    // ============================================================
     // Recibir
-    // ============================================================
     bool startReceiving();
     void stopReceiving();
     bool isReceiving() const {
         return kem_srv_run.load() || xfer_srv_run.load();
     }
 
-    // ============================================================
     // Info / utilidades
-    // ============================================================
     std::string getRecvDir() const {
         return recv_dir;
     }
     static std::vector<std::string> expandFiles(const std::string& path);
 
   private:
-    // ============================================================
     // Estado
-    // ============================================================
     std::string username;
     std::string cfg_dir;
     std::string recv_dir;
@@ -395,16 +366,13 @@ class ShareManager {
     FileRecvCallback file_recv_cb_;
     FileSendCallback file_send_cb_;
 
-    // ▼▼▼ Helper de log con eventos estructurados ▼▼▼
+    // Helper de log con eventos estructurados
     void log(share_log::LogLevel level, share_log::LogEvent event, const std::string& data = "") {
         if (log_cb_)
             log_cb_(level, event, data);
     }
-    // ▲▲▲
 
-    // ============================================================
     // Helpers privados (implementación en .cpp)
-    // ============================================================
     void loadTrust();
     void saveTrust();
     bool checkTrust(const std::string& rem_user, const std::string& fprint, bool is_srv);
