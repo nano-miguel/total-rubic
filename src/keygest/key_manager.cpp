@@ -1,9 +1,7 @@
-// keygest/key_manager.cpp - 0.1 alpha
+// keygest/key_manager.cpp 
 // Lógica pura del gestor de claves.
-//
 // Este archivo NO sabe nada de bytes, zlib, MAGIC ni open/write.
 // El formato de disco vive en key_pipeline.cpp y la cripto en key_crypto.cpp.
-
 #include "key_manager.h"
 #include <sys/stat.h>
 #include <sstream>
@@ -124,9 +122,10 @@ bool KeyManager::ensureUsersDirectory() const {
     const char* xdg_data = getenv("XDG_DATA_HOME");
     if (xdg_data && xdg_data[0] != '\0') {
         usersDir = std::string(xdg_data) + "/RUBIC-A/users";
-    } else {
+    }   
+    else {
         const char* home = getenv("HOME");
-        if (home && home[0] != '\0') {
+    if (home && home[0] != '\0') {
             usersDir = std::string(home) + "/.local/share/RUBIC-A/users";
         } else {
           return false;
@@ -172,7 +171,7 @@ bool KeyManager::saveKeysToFile() {
 
         setFilePermissions(keysFile);
         return true;
-    } catch (const std::exception&) {
+    }   catch (const std::exception&) {
         return false;
     }
 }
@@ -196,7 +195,7 @@ bool KeyManager::loadKeysFromFile() {
 
         keys = std::move(loaded);
         return true;
-    } catch (const std::exception&) {
+    }   catch (const std::exception&) {
         return false;
     }
 }
@@ -205,9 +204,8 @@ bool KeyManager::loadKeysFromFile() {
 // KeyManager — ciclo de vida
 
 KeyManager::KeyManager() : passwordVerified(false) {}
-
 KeyManager::~KeyManager() {
-    userPasswordSecure.clear();
+userPasswordSecure.clear();
 }
 
 // KeyManager — métodos públicos
@@ -236,7 +234,6 @@ bool KeyManager::activateKey(const std::string& keyName, const Botan::secure_vec
 
     KeyInfo& key = it->second;
     if (key.is_active) return true;
-
     if (!key.requires_access) {
         key.is_active = true;
         key.last_used = time(nullptr);
@@ -245,7 +242,7 @@ bool KeyManager::activateKey(const std::string& keyName, const Botan::secure_vec
     }
 
     bool match = (accessCode.size() == key.access_code.size() &&
-                  secure_memcmp(accessCode.data(), key.access_code.data(), accessCode.size()));
+    secure_memcmp(accessCode.data(), key.access_code.data(), accessCode.size()));
     if (!match) return false;
 
     key.is_active = true;
