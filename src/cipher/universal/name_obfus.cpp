@@ -1,6 +1,4 @@
 // src/cipher/universal/name_obfus.cpp
-// Lógica de ofuscación de nombres, contadores y gestión de la clave de nombres.
-
 #include "../universal_cipher.h"
 #include <botan/stream_cipher.h>
 #include <botan/pwdhash.h>
@@ -171,7 +169,6 @@ NameKeyMgr::~NameKeyMgr() {
     if (!name_key.empty()) SecMemGuard::secure_memset(name_key.data(), 0, name_key.size());
 }
 
-//************************************************
 // PersistCounter
 
 bool PersistCounter::write_full(int fd, const void* data, size_t size) 
@@ -345,9 +342,7 @@ uint64_t PersistCounter::get(const std::string& key) const {
     return it != counters.end() ? it->second : 0;
 }
 
-//**************************************** */
 // NameObfus
-
 std::string NameObfus::base64_url_encode(const std::string& data) 
 {
     std::string encoded = Botan::base64_encode(reinterpret_cast<const uint8_t*>(data.data()), data.size());
@@ -367,7 +362,7 @@ std::string NameObfus::base64_url_decode(const std::string& encoded)
     try {
         auto vec = Botan::base64_decode(base64);
         return std::string(vec.begin(), vec.end());
-    } catch (const std::exception& e) {
+    }   catch (const std::exception& e) {
         return "";
     }
 }
@@ -441,7 +436,7 @@ std::string NameObfus::obfuscate_name(const std::string& original_name) {
             name_cache[idx]->hits = 1;
         }
         return result;
-    } catch (const std::exception& e) {
+    }   catch (const std::exception& e) {
         return "file_" + std::to_string(SecureRandom::random_uint64()) + ".enc";
     }
 }
@@ -461,7 +456,7 @@ std::string NameObfus::deobfuscate_name(const std::string& obfuscated_name) {
 
     try {
         if (obfuscated_name.length() <= 4 || obfuscated_name.substr(obfuscated_name.length() - 4) != ".enc") {
-            return obfuscated_name;
+        return obfuscated_name;
         }
 
         std::string base64_part = obfuscated_name.substr(0, obfuscated_name.length() - 4);
@@ -488,11 +483,11 @@ std::string NameObfus::deobfuscate_name(const std::string& obfuscated_name) {
             name_cache[idx]->hits = 1;
         }
         return original_name;
-    } catch (const std::exception& e) {
+    }   catch (const std::exception& e) {
         return "restored_" + obfuscated_name;
     }
 }
 
 void NameObfus::force_save_counters() {
-    if (persistent_counter) persistent_counter->force_save();
+if (persistent_counter) persistent_counter->force_save();
 }
