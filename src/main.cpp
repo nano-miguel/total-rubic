@@ -4,7 +4,7 @@
 
 int main(int argc, char* argv[]) {
     try {
-        // Disclaimer of Liability // Aviso de Responsabilidad
+        // Aviso de Responsabilidad
         std::cout << GREEN
                   << "rubi-c es un codigo abierto y de uso libre no me responsabilizo "
                      "por el mal uso de la herramienta o perdida de datos es una "
@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
             return worker_rc;
         }
 
-        // --- Auto-detectar idioma del sistema ---
+        // Auto-detectar idioma del sistema 
         std::string sys_lang = Translator::detectSystemLanguage();
         if (!TR().load(sys_lang)) {
             TR().load("en"); // Si el sistema tiene un idioma que no tenemos, ponemos inglés
