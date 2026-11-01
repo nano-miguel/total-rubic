@@ -151,6 +151,7 @@ inline static UniversalCipherUI* instance = nullptr;
      std::cout << BLUE << "│" << GREEN << " " << marker << " " << MAGENTA << label << pad_to(plain, 68) << BLUE
                << "│" << RESET << "\n";
  }
+
 public:
 UniversalCipherUI(UniversalCipher& core, KeyManager* km) : core_(core), keyManager_(km) {
 instance = this;
