@@ -315,7 +315,6 @@ std::vector<StorUnit> UnitEncryptor::detectUnits() {
             u.device_type = DevDetect::detect(dev);
             u.has_header_backup = backup_mgr.backupExists(dev);
             uniq[dev] = u;
-
                 }
             }
         }
