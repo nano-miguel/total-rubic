@@ -49,9 +49,9 @@ std::string KeyCryptoUtils::generateRandomHex(int bytes) {
     }
 }
 
-Botan::secure_vector<uint8_t> KeyCryptoUtils::deriveKey(const Botan::secure_vector<uint8_t>& password,
-                                                        const Botan::secure_vector<uint8_t>& salt,
-                                                        size_t key_len) {
+Botan::secure_vector<uint8_t> KeyCryptoUtils::deriveKey(
+const Botan::secure_vector<uint8_t>& password,
+const Botan::secure_vector<uint8_t>& sal,size_t key_len) {
     try {
         auto argon2_family = Botan::PasswordHashFamily::create("Argon2id");
         if (!argon2_family) {
@@ -76,8 +76,9 @@ Botan::secure_vector<uint8_t> KeyCryptoUtils::deriveKey(const Botan::secure_vect
     }
 }
 
-Botan::secure_vector<uint8_t> KeyCryptoUtils::encryptData(const Botan::secure_vector<uint8_t>& plaintext,
-                                                          const Botan::secure_vector<uint8_t>& password) {
+Botan::secure_vector<uint8_t> KeyCryptoUtils::encryptData(
+const Botan::secure_vector<uint8_t>& plaintext,   
+const Botan::secure_vector<uint8_t>& password) {
     try {
         Botan::AutoSeeded_RNG rng;
 
@@ -118,8 +119,9 @@ Botan::secure_vector<uint8_t> KeyCryptoUtils::encryptData(const Botan::secure_ve
     }
 }
 
-Botan::secure_vector<uint8_t> KeyCryptoUtils::decryptData(const Botan::secure_vector<uint8_t>& encrypted,
-                                                          const Botan::secure_vector<uint8_t>& password) {
+Botan::secure_vector<uint8_t> KeyCryptoUtils::decryptData(
+const Botan::secure_vector<uint8_t>& encrypted,
+const Botan::secure_vector<uint8_t>& password) {
     try {
         // Validar tamaño mínimo: Salt + IV + al menos 1 byte de Tag
         if (encrypted.size() < SALT_SIZE + IV_SIZE) {
