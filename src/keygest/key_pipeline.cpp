@@ -99,7 +99,8 @@ Botan::secure_vector<uint8_t> zlib_pack(const uint8_t* src, size_t len) {
     return dst;
 }
 
-Botan::secure_vector<uint8_t> zlib_unpack(const uint8_t* src, size_t len, size_t expected) {
+Botan::secure_vector<uint8_t> zlib_unpack(
+const uint8_t* src, size_t len, size_t expected) {
     Botan::secure_vector<uint8_t> dst(expected);
     uLongf out_len = static_cast<uLongf>(expected);
     if (uncompress(dst.data(), &out_len, src, static_cast<uLong>(len)) != Z_OK)
@@ -146,7 +147,8 @@ Botan::secure_vector<uint8_t> KeyInfo::serialize_secure() const {
     return out;
 }
 
-bool KeyInfo::deserialize_secure(const Botan::secure_vector<uint8_t>& data) {
+bool KeyInfo::deserialize_secure(
+const Botan::secure_vector<uint8_t>& data) {
     BufReader r(data);
 
     uint64_t created = 0;
