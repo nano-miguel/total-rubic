@@ -227,11 +227,14 @@ int fd, const EncUnitHdr& hdr) {
     ssize_t w = -1;
     {
         DirectIOGuard guard(fd);
-        if (!guard.valid()) return false;
+    if (!guard.valid()) 
+        return false;
         w = pwrite(fd, &hdr, sizeof(hdr), HEADER_OFFSET_SECTORS * SECTOR_SIZE);
     }
-    if (w != sizeof(hdr)) return false;
-    if (fsync(fd) != 0) return false;
+    if (w != sizeof(hdr)) 
+        return false;
+    if (fsync(fd) != 0)
+        return false;
     return true;
 }
 
@@ -334,7 +337,9 @@ std::vector<StorUnit> UnitEncryptor::detectUnits() {
 
     units.reserve(uniq.size());
     for (auto& p : uniq) units.push_back(p.second);
-    std::sort(units.begin(), units.end(), [](const StorUnit& a,const StorUnit& b) {
+    std::sort(units.begin(), units.end(), [](
+        const StorUnit& a,
+        const StorUnit& b) {
     if (a.is_system_disk != b.is_system_disk) 
     return a.is_system_disk > b.is_system_disk;
     return a.total_size > b.total_size;
@@ -400,18 +405,24 @@ const StorUnit& unit,
 const Botan::secure_vector<uint8_t>& master_key, bool encrypt) {
     ThCfg cfg = settings_.resolveConfig(unit.device_type);
 
-    log(LogLevel::Info, LogEvent::DeviceTypeDetected, unit.getDevTypeStr());
-    log(LogLevel::Info, settings_.isCustomMode() ? LogEvent::ConfigCustom : LogEvent::ConfigAuto, std::to_string(cfg.num_threads) + " threads");
-    log(LogLevel::Info, LogEvent::ChunkSizeInfo, std::to_string(cfg.chunk_size_mb));
-    log(LogLevel::Info, LogEvent::IoModeInfo, cfg.use_direct_io ? "direct" : "normal");
+    log(LogLevel::Info, LogEvent::DeviceTypeDetected,
+        unit.getDevTypeStr());
+    log(LogLevel::Info, settings_.isCustomMode() ? LogEvent::ConfigCustom : LogEvent::ConfigAuto,
+        std::to_string(cfg.num_threads) + " threads");
+    log(LogLevel::Info, LogEvent::ChunkSizeInfo,
+        std::to_string(cfg.chunk_size_mb));
+    log(LogLevel::Info, LogEvent::IoModeInfo,
+        cfg.use_direct_io ? "direct" : "normal");
 
     int flags = O_RDWR | O_SYNC;
     if (cfg.use_direct_io) flags |= O_DIRECT;
     int fd = open(unit.device_path.c_str(), flags);
     if (fd < 0) {
-    log(LogLevel::Error, LogEvent::DeviceOpenFailed, strerror(errno));
+    log(LogLevel::Error, LogEvent::DeviceOpenFailed,
+        strerror(errno));
     if (cfg.use_direct_io && errno == EINVAL) {
-    log(LogLevel::Warning, LogEvent::DeviceOpenRetry, strerror(errno));
+    log(LogLevel::Warning, LogEvent::DeviceOpenRetry,
+        strerror(errno));
        flags &= ~O_DIRECT;fd = open(unit.device_path.c_str(), flags);
     if (fd < 0) 
           return false;cfg.use_direct_io = false;
@@ -422,7 +433,7 @@ const Botan::secure_vector<uint8_t>& master_key, bool encrypt) {
 
     uint64_t total_size = 0;
     if (ioctl(fd, BLKGETSIZE64, &total_size) < 0) {
-        log(LogLevel::Error, LogEvent::DeviceSizeFailed, strerror(errno));
+        log(LogLevel::Error, LogEvent::DeviceSizeFailed,strerror(errno));
         close(fd);
         return false;
     }
@@ -460,8 +471,7 @@ const Botan::secure_vector<uint8_t>& master_key, bool encrypt) {
 
     unit_pipeline::ProcessContext pipe_ctx{
         fd, data_size, data_start_sector, cfg, unit.device_type, xts_key, encrypt,
-        speed_meter, stop_requested,
-        log_cb,
+        speed_meter, stop_requested,log_cb,
         [this](uint64_t c, uint64_t t, double s) { this->progress(c, t, s); }
     };
 
@@ -487,7 +497,7 @@ const Botan::secure_vector<uint8_t>& master_key, bool encrypt) {
             } 
             else {
             log(LogLevel::Error, LogEvent::HeaderCleanFsyncFailed, "");
-                pipeline_ok = false;
+            pipeline_ok = false;
             }
         }   else {
             log(LogLevel::Error, LogEvent::HeaderCleanWriteFailed, "");
@@ -502,8 +512,11 @@ const Botan::secure_vector<uint8_t>& master_key, bool encrypt) {
     return pipeline_ok;
 }
 
-bool UnitEncryptor::cleanHeader(const StorUnit& unit) {
-    log(LogLevel::Info, LogEvent::CleanupHeader, unit.device_path);
+bool UnitEncryptor::cleanHeader(
+const StorUnit& unit) {
+    log(LogLevel::Info,
+        LogEvent::CleanupHeader,
+        unit.device_path);
     int fd = open(unit.device_path.c_str(), O_RDWR | O_SYNC);
     if (fd < 0) {
     log(LogLevel::Error, LogEvent::DeviceOpenFailed, strerror(errno));
@@ -535,7 +548,8 @@ const Botan::secure_vector<uint8_t>& master_key) {
     return false;
     }
     int fd = open(unit.device_path.c_str(), O_RDWR | O_SYNC);
-    if (fd < 0) { log(LogLevel::Error, LogEvent::DeviceOpenFailed, strerror(errno)); 
+    if (fd < 0) {
+    log(LogLevel::Error, LogEvent::DeviceOpenFailed, strerror(errno)); 
     return false;
     }
     if (!writeHdr(fd, hdr)) {
@@ -591,15 +605,18 @@ const std::string& point) {
 }
 
 bool UnitEncryptor::unmountDevice(StorUnit& u) {
-    if (!u.is_mounted) return true;
-    log(LogLevel::Info, LogEvent::Unmounting, u.mount_point);
-    safeExec({"umount", "-l", u.mount_point}, true);
+    if (!u.is_mounted)
+    return true;
+    log(LogLevel::Info, LogEvent::Unmounting,
+        u.mount_point);safeExec({"umount", "-l",
+        u.mount_point}, true);
     std::ifstream mounts("/proc/mounts");
     std::string line;
     while (std::getline(mounts, line))
-        if (line.find(u.device_path) != std::string::npos) return false;
-    u.is_mounted = false;
-    u.mount_point.clear();
+    if (line.find(u.device_path) != std::string::npos)
+    return false;
+        u.is_mounted = false;
+        u.mount_point.clear();
     log(LogLevel::Success, LogEvent::Unmounted, "");
     return true;
 }
@@ -610,13 +627,17 @@ const std::string& fstype) {
     log(LogLevel::Info, LogEvent::FormatStart, fstype);
     int res = -1;
     if (fstype == "vfat" || fstype == "fat32")
-        res = safeExec({"mkfs.vfat", "-F", "32", unit.device_path}, true);
+        res = safeExec({"mkfs.vfat", "-F", "32",
+            unit.device_path}, true);
     else if (fstype == "ntfs")
-        res = safeExec({"mkfs.ntfs", "-f", unit.device_path}, true);
+        res = safeExec({"mkfs.ntfs", "-f",
+            unit.device_path}, true);
     else if (fstype == "ext4")
-        res = safeExec({"mkfs.ext4", "-F", unit.device_path}, true);
+        res = safeExec({"mkfs.ext4", "-F",
+            unit.device_path}, true);
     else
-        res = safeExec({"mkfs." + fstype, unit.device_path}, true);
+        res = safeExec({"mkfs." + fstype,
+            unit.device_path}, true);
 
     if (res == 0) {
         log(LogLevel::Success, LogEvent::FormatOk, "");
@@ -629,26 +650,32 @@ const std::string& fstype) {
 bool UnitEncryptor::executeElevatedOp(
 const StorUnit& unit, bool encrypt,
 const Botan::secure_vector<uint8_t>& master_key) {
-    if (master_key.empty() || master_key.size() != 32) return false;
+    if (master_key.empty() || master_key.size() != 32)
+    return false;
 
     char keyfile[] = "/dev/shm/.rubic_key_XXXXXX";
     int kfd = mkstemp(keyfile);
     if (kfd < 0) return false;
     fchmod(kfd, 0600);
-    bool write_ok = (write(kfd,master_key.data(),master_key.size()) == (ssize_t)master_key.size());
+    bool write_ok = (write(kfd,
+          master_key.data(),
+          master_key.size()) == (ssize_t)master_key.size());
     fsync(kfd);
     close(kfd);
-    if (!write_ok) { unlink(keyfile); return false; }
+    if (!write_ok) { unlink(keyfile);
+    return false; }
 
     char exe[PATH_MAX];ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
-    if (n <= 0) { unlink(keyfile); return false; }
+    if (n <= 0) { unlink(keyfile);
+    return false; }
     exe[n] = '\0';
 
     const char* env_lang = getenv("LANG");
     std::string cur_lang = env_lang ? env_lang : "en";
 
     pid_t pid = fork();
-    if (pid < 0) { unlink(keyfile);return false; }
+    if (pid < 0) { unlink(keyfile);
+    return false; }
     if (pid == 0) {
         setenv("LANG", cur_lang.c_str(), 1);
         execlp("sudo", "sudo", exe, "--unit-op",unit.device_path.c_str(),
@@ -707,11 +734,17 @@ int UnitEncryptor::tryRunAsWorker(int argc, char* argv[]) {
     UnitEncryptor enc;
 
     // Callbacks de UI movidos a UnitEvents
-    enc.setLogCallback([](LogLevel level, LogEvent event, const std::string& data) {
+    enc.setLogCallback([](
+        LogLevel level,
+        LogEvent event,
+        const std::string& data) {
         UnitEvents::print_cli(level, event, data);
     });
 
-    enc.setProgressCallback([](uint64_t cur, uint64_t total, double speed) {
+    enc.setProgressCallback([](
+        uint64_t cur,
+        uint64_t total,
+        double speed) {
         UnitEvents::print_cli_progress(cur, total, speed);
     });
 
