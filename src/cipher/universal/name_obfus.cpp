@@ -75,7 +75,9 @@ bool NameKeyMgr::save_master_key()
     cipher->finish(encrypted);
 
     if (!write_full(file.get(), salt.data(), 16) || !write_full(file.get(), iv.data(), 16) ||
-        !write_full(file.get(), encrypted.data(), encrypted.size())) {
+        !write_full(file.get(),
+        encrypted.data(),
+        encrypted.size())) {
         return false;
     }
 
@@ -85,7 +87,9 @@ bool NameKeyMgr::save_master_key()
     hash->update(encrypted);
     auto checksum = hash->final();
 
-    if (!write_full(file.get(), checksum.data(), checksum.size())) {
+    if (!write_full(file.get(),
+        checksum.data(),
+        checksum.size())) {
         return false;
     }
 
@@ -105,7 +109,9 @@ bool NameKeyMgr::load_master_key() {
         return false;
 
     std::vector<uint8_t> buffer(st.st_size);
-    if (!read_full(file.get(), buffer.data(), buffer.size()))
+    if (!read_full(file.get(),
+        buffer.data(),
+        buffer.size()))
         return false;
 
     size_t pos = 0;
@@ -316,7 +322,8 @@ void PersistCounter::auto_save_loop()
     }
 }
 
-PersistCounter::PersistCounter(const std::string& file_path) : storage_file(file_path) {
+PersistCounter::PersistCounter(
+const std::string& file_path) : storage_file(file_path) {
     load_from_file();
     auto_save_running = true;
     auto_save_thread = std::thread(&PersistCounter::auto_save_loop, this);
@@ -331,7 +338,8 @@ PersistCounter::~PersistCounter() {
     if (dirty.load()) save_to_file_internal();
 }
 
-uint64_t PersistCounter::get_and_increment(const std::string& key) {
+uint64_t PersistCounter::get_and_increment(
+const std::string& key) {
     std::unique_lock<std::shared_timed_mutex> lock(counters_mutex);
     uint64_t& counter = counters[key];
     uint64_t result = counter++;
@@ -356,7 +364,8 @@ const std::string& key)const {
 //**************************************** */
 // NameObfus
 
-std::string NameObfus::base64_url_encode(const std::string& data) 
+std::string NameObfus::base64_url_encode(
+const std::string& data) 
 {
     std::string encoded = Botan::base64_encode(reinterpret_cast<const uint8_t*>(data.data()), data.size());
     std::replace(encoded.begin(), encoded.end(), '+', '-');
@@ -365,7 +374,8 @@ std::string NameObfus::base64_url_encode(const std::string& data)
     return encoded;
 }
 
-std::string NameObfus::base64_url_decode(const std::string& encoded)
+std::string NameObfus::base64_url_decode(
+const std::string& encoded)
 {
     std::string base64 = encoded;
     std::replace(base64.begin(), base64.end(), '-', '+');
@@ -406,7 +416,8 @@ NameObfus::~NameObfus()
     }
 }
 
-std::string NameObfus::obfuscate_name(const std::string& original_name) {
+std::string NameObfus::obfuscate_name(
+const std::string& original_name) {
     if (original_name.empty()) return "";
 
     {
@@ -460,7 +471,7 @@ std::string NameObfus::obfuscate_name(const std::string& original_name) {
 
 std::string NameObfus::deobfuscate_name(
 const std::string& obfuscated_name) {
-    if (obfuscated_name.empty()) return obfuscated_name;
+    if (obfuscated_name.empty())return obfuscated_name;
 
     {
         std::shared_lock<std::shared_mutex> lock(cache_mutex);
