@@ -1,7 +1,5 @@
-// share/share_manager.cpp - 0.1 alpha
+// share/share_manager.cpp - 
 // Implementación de la lógica pura de compartir archivos.
-// La UI vive en ui/share_manager_ui.h
-// NOTA: La lógica del servidor vive en share_server.cpp
 
 #include "share_manager.h"
 
@@ -25,7 +23,9 @@ void ShareManager::saveTrust() {
     }
 }
 
-bool ShareManager::checkTrust(const std::string& rem_user, const std::string& fprint, bool is_srv) {
+bool ShareManager::checkTrust(
+const std::string& rem_user,
+const std::string& fprint, bool is_srv) {
     if (fprint.empty())
         return false;
     if (trust_fprints.count(fprint))
@@ -48,7 +48,8 @@ bool ShareManager::checkTrust(const std::string& rem_user, const std::string& fp
     return false;
 }
 
-std::vector<uint8_t> ShareManager::toVec(const Botan::secure_vector<uint8_t>& sec) {
+std::vector<uint8_t> ShareManager::toVec(
+const Botan::secure_vector<uint8_t>& sec) {
     return std::vector<uint8_t>(sec.begin(), sec.end());
 }
 
@@ -134,7 +135,9 @@ std::string ShareManager::hashFile(const std::string& path) {
     }
 }
 
-std::vector<uint8_t> ShareManager::encChunk(const std::vector<uint8_t>& data, const std::vector<uint8_t>& key) {
+std::vector<uint8_t> ShareManager::encChunk(
+const std::vector<uint8_t>& data,
+const std::vector<uint8_t>& key) {
     try {
         std::vector<uint8_t> nonce(12);
         rng.randomize(nonce.data(), nonce.size());
@@ -158,7 +161,9 @@ std::vector<uint8_t> ShareManager::encChunk(const std::vector<uint8_t>& data, co
     }
 }
 
-std::vector<uint8_t> ShareManager::decChunk(const std::vector<uint8_t>& data, const std::vector<uint8_t>& key) {
+std::vector<uint8_t> ShareManager::decChunk(
+const std::vector<uint8_t>& data,
+const std::vector<uint8_t>& key) {
     try {
         if (data.size() < 12)
             return {};
@@ -398,9 +403,9 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
             std::vector<uint8_t> rem_sig(rem_sig_len);
             safeRecv(sock, rem_sig.data(), rem_sig_len);
 
-            if (rem_dili_key) {
-                Botan::PK_Verifier verifier(*rem_dili_key, "Pure");
-                verifier.update(reinterpret_cast<const uint8_t*>(rem_kyber_buf.data()), rem_kyber_len);
+         if (rem_dili_key) {
+            Botan::PK_Verifier verifier(*rem_dili_key, "Pure");
+            verifier.update(reinterpret_cast<const uint8_t*>(rem_kyber_buf.data()), rem_kyber_len);
                 if (!verifier.check_signature(rem_sig)) {
                     log(share_log::LogLevel::Security, share_log::LogEvent::MitmDetected, rem_user + "@" + rem_addr);
                     close(sock);
@@ -448,10 +453,10 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
 // *****************************************
 // ENVIAR (Cliente)
 
-bool ShareManager::sendFile(const std::string& path,
-                            const std::string& rem_addr,
-                            int rem_port,
-                            const std::vector<uint8_t>& key) {
+bool ShareManager::sendFile(
+const std::string& path,
+const std::string& rem_addr,int rem_port,
+const std::vector<uint8_t>& key) {
     try {
         int sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock < 0)
@@ -520,7 +525,9 @@ bool ShareManager::sendFile(const std::string& path,
     }
 }
 
-bool ShareManager::sendFiles(const std::vector<std::string>& file_paths, const std::string& rem_addr, int rem_port) {
+bool ShareManager::sendFiles(
+const std::vector<std::string>& file_paths,
+const std::string& rem_addr, int rem_port) {
     if (file_paths.empty()) {
         log(share_log::LogLevel::Warning, share_log::LogEvent::NoFilesToSend, "");
         return false;
@@ -636,9 +643,10 @@ void ShareManager::setUsername(const std::string& name) {
     loadTrust();
 }
 
-void ShareManager::setIdentity(const std::vector<uint8_t>& pub_key,
-                               const std::vector<uint8_t>& priv_key,
-                               const std::string& fp) {
+void ShareManager::setIdentity(
+const std::vector<uint8_t>& pub_key,                              
+const std::vector<uint8_t>& priv_key,
+const std::string& fp) {
     id_pub_key = pub_key;
     id_priv_raw = Botan::secure_vector<uint8_t>(priv_key.begin(), priv_key.end());
     id_fprint = fp;
