@@ -54,9 +54,14 @@ AlignBuf& AlignBuf::operator=(AlignBuf&& other) noexcept {
     return *this;
 }
 
-uint8_t* AlignBuf::data() { return static_cast<uint8_t*>(data_ptr); }
-const uint8_t* AlignBuf::data() const { return static_cast<const uint8_t*>(data_ptr); }
-size_t AlignBuf::size() const { return size_bytes; }
+uint8_t* AlignBuf::data() { 
+    return static_cast<uint8_t*>(data_ptr); }
+const uint8_t* AlignBuf::data() 
+const { 
+    return static_cast<const uint8_t*>(data_ptr); }
+size_t AlignBuf::size() 
+const { 
+    return size_bytes; }
 
 // ============================================
 // SpeedMtr
@@ -82,8 +87,10 @@ double SpeedMtr::getAvgSpeed() {
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time).count();
     return ms > 0 ? (total_bytes / 1048576.0) / (ms / 1000.0) : 0;
 }
-double SpeedMtr::getPeakSpeed() { return peak_speed.load(); }
-uint64_t SpeedMtr::getTotalBytes() { return total_bytes.load(); }
+double SpeedMtr::getPeakSpeed() { 
+    return peak_speed.load(); }
+uint64_t SpeedMtr::getTotalBytes() { 
+    return total_bytes.load(); }
 void SpeedMtr::reset() {
     start_time = last_time = std::chrono::steady_clock::now();
     total_bytes = last_bytes = 0;
@@ -117,7 +124,8 @@ UnitEncryptor::UnitEncryptor() : last_refresh(0) {
 }
 
 // FIX: Ahora usa error_out en vez de throw
-bool UnitEncryptor::setDirectKeyHex(const std::string& hexKey, std::string& error_out) {
+bool UnitEncryptor::setDirectKeyHex(
+const std::string& hexKey, std::string& error_out) {
     if (hexKey.length() != 64) {
         useDirectKey = false;
         error_out = "err_hex_len_64"; 
@@ -155,7 +163,8 @@ bool UnitEncryptor::isPhysicalDevice(const std::string& p) {
     return p.find("/dev/loop") == std::string::npos && p.find("/dev/ram") == std::string::npos;
 }
 
-std::string UnitEncryptor::getParentDevice(const std::string& path) {
+std::string UnitEncryptor::getParentDevice(
+const std::string& path) {
     std::string dev = path;
     if (dev.find("/dev/") == 0) dev = dev.substr(5);
     if (dev.find("nvme") == 0) {
@@ -166,7 +175,8 @@ std::string UnitEncryptor::getParentDevice(const std::string& path) {
     return p != std::string::npos ? "/dev/" + dev.substr(0, p) : "";
 }
 
-bool UnitEncryptor::isSystemDisk(const std::string& path) {
+bool UnitEncryptor::isSystemDisk(
+const std::string& path) {
     std::ifstream mounts("/proc/mounts");
     std::string line;
     while (std::getline(mounts, line)) {
@@ -197,7 +207,8 @@ FSInfo UnitEncryptor::getFSInfo(const std::string& path) {
     return info;
 }
 
-bool UnitEncryptor::isUnitEncrypt(const std::string& device_path) {
+bool UnitEncryptor::isUnitEncrypt(
+const std::string& device_path) {
     int fd = open(device_path.c_str(), O_RDONLY);
     if (fd < 0) return false;
     EncUnitHdr hdr;
@@ -206,11 +217,13 @@ bool UnitEncryptor::isUnitEncrypt(const std::string& device_path) {
     return ok;
 }
 
-bool UnitEncryptor::readHdr(int fd, EncUnitHdr& hdr) {
+bool UnitEncryptor::readHdr(
+int fd, EncUnitHdr& hdr) {
     return read_enc_header(fd, hdr);
 }
 
-bool UnitEncryptor::writeHdr(int fd, const EncUnitHdr& hdr) {
+bool UnitEncryptor::writeHdr(
+int fd, const EncUnitHdr& hdr) {
     ssize_t w = -1;
     {
         DirectIOGuard guard(fd);
@@ -313,7 +326,6 @@ std::vector<StorUnit> UnitEncryptor::detectUnits() {
             u.device_type = DevDetect::detect(dev);
             u.has_header_backup = backup_mgr.backupExists(dev);
             uniq[dev] = u;
-
                 }
             }
         }
@@ -322,7 +334,7 @@ std::vector<StorUnit> UnitEncryptor::detectUnits() {
 
     units.reserve(uniq.size());
     for (auto& p : uniq) units.push_back(p.second);
-    std::sort(units.begin(), units.end(), [](const StorUnit& a, const StorUnit& b) {
+    std::sort(units.begin(), units.end(), [](const StorUnit& a,const StorUnit& b) {
     if (a.is_system_disk != b.is_system_disk) 
     return a.is_system_disk > b.is_system_disk;
     return a.total_size > b.total_size;
@@ -330,7 +342,7 @@ std::vector<StorUnit> UnitEncryptor::detectUnits() {
     return units;
 }
 
-std::vector<StorUnit> UnitEncryptor::getUnits() { refreshUnits(); return cached_units; }
+std::vector<StorUnit> UnitEncryptor::getUnits() { refreshUnits();return cached_units; }
 void UnitEncryptor::refresh() { cached_units = detectUnits(); last_refresh = time(nullptr); }
 void UnitEncryptor::reloadCustomConfig() { settings_.load(); }
 bool UnitEncryptor::validateUnitProcess(
@@ -623,7 +635,7 @@ const Botan::secure_vector<uint8_t>& master_key) {
     int kfd = mkstemp(keyfile);
     if (kfd < 0) return false;
     fchmod(kfd, 0600);
-    bool write_ok = (write(kfd, master_key.data(), master_key.size()) == (ssize_t)master_key.size());
+    bool write_ok = (write(kfd,master_key.data(),master_key.size()) == (ssize_t)master_key.size());
     fsync(kfd);
     close(kfd);
     if (!write_ok) { unlink(keyfile); return false; }
@@ -637,7 +649,7 @@ const Botan::secure_vector<uint8_t>& master_key) {
     std::string cur_lang = env_lang ? env_lang : "en";
 
     pid_t pid = fork();
-    if (pid < 0) { unlink(keyfile); return false; }
+    if (pid < 0) { unlink(keyfile);return false; }
     if (pid == 0) {
         setenv("LANG", cur_lang.c_str(), 1);
         execlp("sudo", "sudo", exe, "--unit-op",
@@ -680,7 +692,7 @@ int UnitEncryptor::tryRunAsWorker(int argc, char* argv[]) {
     if (keyfile.rfind("/dev/shm/.rubic_key_", 0) != 0) { std::cerr << "[-] Ruta de keyfile invalida.\n"; return 1; }
 
     int kfd = open(keyfile.c_str(), O_RDONLY);
-    if (kfd < 0) { std::cerr << "[-] No se pudo abrir el keyfile.\n"; return 1; }
+    if (kfd < 0) { std::cerr << "[-] No se pudo abrir el keyfile.\n";return 1; }
     unlink(keyfile.c_str());
 
     Botan::secure_vector<uint8_t> master_key(32);
