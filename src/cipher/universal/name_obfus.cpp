@@ -12,7 +12,8 @@
 #include <iostream>
 
 // NameKey gestor
-Botan::secure_vector<uint8_t> NameKeyMgr::derive_name_key(const Botan::secure_vector<uint8_t>& master) 
+Botan::secure_vector<uint8_t> NameKeyMgr::derive_name_key(
+const Botan::secure_vector<uint8_t>& master) 
 {
     auto hash = Botan::HashFunction::create_or_throw("SHA-256");
     hash->update(master);
@@ -94,14 +95,18 @@ bool NameKeyMgr::save_master_key()
 
 bool NameKeyMgr::load_master_key() {
     FileRAII file(key_file_path, O_RDONLY);
-    if (!file.valid()) return false;
+    if (!file.valid())
+        return false;
 
     struct stat st;
-    if (fstat(file.get(), &st) != 0) return false;
-    if (st.st_size < 112) return false;
+    if (fstat(file.get(), &st) != 0)
+        return false;
+    if (st.st_size < 112)
+        return false;
 
     std::vector<uint8_t> buffer(st.st_size);
-    if (!read_full(file.get(), buffer.data(), buffer.size())) return false;
+    if (!read_full(file.get(), buffer.data(), buffer.size()))
+        return false;
 
     size_t pos = 0;
 
@@ -167,8 +172,10 @@ NameKeyMgr::NameKeyMgr(const std::string& key_file) : key_file_path(key_file) {
 }
 
 NameKeyMgr::~NameKeyMgr() {
-    if (!master_key.empty()) SecMemGuard::secure_memset(master_key.data(), 0, master_key.size());
-    if (!name_key.empty()) SecMemGuard::secure_memset(name_key.data(), 0, name_key.size());
+    if (!master_key.empty()) SecMemGuard::secure_memset(master_key.data(), 0,
+        master_key.size());
+    if (!name_key.empty()) SecMemGuard::secure_memset(name_key.data(), 0,
+        name_key.size());
 }
 
 //************************************************
@@ -216,15 +223,14 @@ void PersistCounter::load_from_file() {
         if (buffer.size() < sizeof(uint32_t)) return;
 
         uint32_t count;
-        std::memcpy(&count, buffer.data() + pos, sizeof(count));
-        pos += sizeof(count);
+        std::memcpy(&count, buffer.data() + pos,
+            sizeof(count));pos += sizeof(count);
 
         for (uint32_t i = 0; i < count && pos < buffer.size(); i++) {
             if (pos + sizeof(uint16_t) > buffer.size()) break;
 
-            uint16_t name_len;
-            std::memcpy(&name_len, buffer.data() + pos, sizeof(name_len));
-            pos += sizeof(name_len);
+            uint16_t name_len;std::memcpy(&name_len, buffer.data() + pos,
+                sizeof(name_len));pos += sizeof(name_len);
 
             if (name_len == 0 || name_len > 1024 || pos + name_len > buffer.size()) break;
 
@@ -243,7 +249,8 @@ void PersistCounter::load_from_file() {
 }
 
 bool PersistCounter::save_to_file_internal() {
-    if (is_saving.exchange(true)) return true;
+    if (is_saving.exchange(true))
+        return true;
 
     std::string temp_file = storage_file + ".tmp";
     bool success = false;
@@ -339,7 +346,8 @@ uint64_t PersistCounter::get_and_increment(const std::string& key) {
     return result;
 }
 
-uint64_t PersistCounter::get(const std::string& key) const {
+uint64_t PersistCounter::get(
+const std::string& key)const {
     std::shared_lock<std::shared_timed_mutex> lock(counters_mutex);
     auto it = counters.find(key);
     return it != counters.end() ? it->second : 0;
@@ -372,7 +380,9 @@ std::string NameObfus::base64_url_decode(const std::string& encoded)
     }
 }
 
-NameObfus::NameObfus(size_t cache_sz, const std::string& counter_file, const std::string& key_file)
+NameObfus::NameObfus(size_t cache_sz,
+const std::string& counter_file,
+const std::string& key_file)
     : cache_size(cache_sz) 
 {
     key_manager = std::make_unique<NameKeyMgr>(key_file);
@@ -423,7 +433,9 @@ std::string NameObfus::obfuscate_name(const std::string& original_name) {
         cipher->set_iv(enc_name.nonce);
 
         Botan::secure_vector<uint8_t> name_bytes(original_name.begin(), original_name.end());
-        cipher->cipher(name_bytes.data(), name_bytes.data(), name_bytes.size());
+        cipher->cipher(name_bytes.data(),
+            name_bytes.data(),
+            name_bytes.size());
 
         enc_name.ciphertext.assign(name_bytes.begin(), name_bytes.end());
         std::string serialized = enc_name.serialize();
@@ -446,7 +458,8 @@ std::string NameObfus::obfuscate_name(const std::string& original_name) {
     }
 }
 
-std::string NameObfus::deobfuscate_name(const std::string& obfuscated_name) {
+std::string NameObfus::deobfuscate_name(
+const std::string& obfuscated_name) {
     if (obfuscated_name.empty()) return obfuscated_name;
 
     {
@@ -466,16 +479,18 @@ std::string NameObfus::deobfuscate_name(const std::string& obfuscated_name) {
 
         std::string base64_part = obfuscated_name.substr(0, obfuscated_name.length() - 4);
         std::string serialized = base64_url_decode(base64_part);
-        if (serialized.empty()) return "restored_" + obfuscated_name;
+        if (serialized.empty()) 
+            return "restored_" + obfuscated_name;
 
         EncryptedName enc_name = EncryptedName::deserialize(serialized);
-        if (enc_name.nonce.size() != 16) return "restored_" + obfuscated_name;
+        if (enc_name.nonce.size() != 16)
+            return "restored_" + obfuscated_name;
 
         auto cipher = Botan::StreamCipher::create_or_throw("CTR(AES-256)");
         cipher->set_key(name_key);
         cipher->set_iv(enc_name.nonce);
 
-        Botan::secure_vector<uint8_t> encrypted_bytes(enc_name.ciphertext.begin(), enc_name.ciphertext.end());
+        Botan::secure_vector<uint8_t> encrypted_bytes(enc_name.ciphertext.begin(),enc_name.ciphertext.end());
         cipher->cipher(encrypted_bytes.data(), encrypted_bytes.data(), encrypted_bytes.size());
         std::string original_name(encrypted_bytes.begin(), encrypted_bytes.end());
 
