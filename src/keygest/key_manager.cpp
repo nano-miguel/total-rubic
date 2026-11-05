@@ -1,8 +1,7 @@
-// keygest/key_manager.cpp - 0.1 alpha
+// keygest/key_manager.cpp 
 // Lógica pura del gestor de claves.
 //
-// Este archivo NO sabe nada de bytes, zlib, MAGIC ni open/write.
-// El formato de disco vive en key_pipeline.cpp y la cripto en key_crypto.cpp.
+// Este archivo NO sabe nada de bytes, zlib, MAGIC ni open/wri
 
 #include "key_manager.h"
 #include <sys/stat.h>
@@ -126,10 +125,11 @@ bool KeyManager::ensureUsersDirectory() const {
     const char* xdg_data = getenv("XDG_DATA_HOME");
     if (xdg_data && xdg_data[0] != '\0') {
         usersDir = std::string(xdg_data) + "/RUBIC-A/users";
-    } else {
-        const char* home = getenv("HOME");
-        if (home && home[0] != '\0') {
-            usersDir = std::string(home) + "/.local/share/RUBIC-A/users";
+    } 
+    else {
+    const char* home = getenv("HOME");
+    if (home && home[0] != '\0') {
+        usersDir = std::string(home) + "/.local/share/RUBIC-A/users";
         } else {
           return false;
         }
@@ -144,7 +144,8 @@ bool KeyManager::ensureUsersDirectory() const {
     return mkdir(usersDir.c_str(), 0700) == 0;
 }
 
-bool KeyManager::setFilePermissions(const std::string& filepath) const {
+bool KeyManager::setFilePermissions(
+const std::string& filepath) const {
     return chmod(filepath.c_str(), 0600) == 0;
 }
 
@@ -215,7 +216,8 @@ KeyManager::~KeyManager() {
 
 // KeyManager — métodos públicos
 
-void KeyManager::setUserPasswordSecure(const Botan::secure_vector<uint8_t>& password) {
+void KeyManager::setUserPasswordSecure(
+const Botan::secure_vector<uint8_t>& password) {
     userPasswordSecure = password;
     passwordVerified = !userPasswordSecure.empty();
 }
@@ -233,7 +235,9 @@ void KeyManager::saveKeys() {
     }
 }
 
-bool KeyManager::activateKey(const std::string& keyName, const Botan::secure_vector<uint8_t>& accessCode) {
+bool KeyManager::activateKey(
+const std::string& keyName,
+const Botan::secure_vector<uint8_t>& accessCode) {
     auto it = keys.find(keyName);
     if (it == keys.end()) return false;
 
@@ -271,7 +275,8 @@ std::vector<std::string> KeyManager::getActiveKeys() const {
     return activeKeys;
 }
 
-bool KeyManager::verifyPassword(const Botan::secure_vector<uint8_t>& inputPass) {
+bool KeyManager::verifyPassword(
+const Botan::secure_vector<uint8_t>& inputPass) {
     if (passwordVerified) return true;
 
     bool match = (inputPass.size() == userPasswordSecure.size() &&
@@ -283,10 +288,11 @@ bool KeyManager::verifyPassword(const Botan::secure_vector<uint8_t>& inputPass) 
     return false;
 }
 
-std::string KeyManager::createKey(const std::string& keyName,
-                                  const std::string& usage,
-                                  Botan::secure_vector<uint8_t> accessCode,
-                                  std::string& error_out) {
+std::string KeyManager::createKey(
+const std::string& keyName,                                  
+const std::string& usage,
+Botan::secure_vector<uint8_t> accessCode,
+std::string& error_out) {
     if (keyName.empty()) {
         error_out = "err_key_name_empty";
         return "";
@@ -328,9 +334,10 @@ std::string KeyManager::createKey(const std::string& keyName,
     return keyName;
 }
 
-bool KeyManager::deleteKey(const std::string& keyName,
-                           const Botan::secure_vector<uint8_t>& accessCode,
-                           std::string& error_out) {
+bool KeyManager::deleteKey(
+const std::string& keyName,                           
+const Botan::secure_vector<uint8_t>& accessCode,
+std::string& error_out) {
     auto it = keys.find(keyName);
     if (it == keys.end()) {
         error_out = "err_key_not_found";
@@ -355,9 +362,10 @@ bool KeyManager::deleteKey(const std::string& keyName,
     return true;
 }
 
-bool KeyManager::toggleKey(const std::string& keyName,
-                           const Botan::secure_vector<uint8_t>& accessCode,
-                           std::string& error_out) {
+bool KeyManager::toggleKey(
+const std::string& keyName,                           
+const Botan::secure_vector<uint8_t>& accessCode,                           
+std::string& error_out) {
     auto it = keys.find(keyName);
     if (it == keys.end()) {
         error_out = "err_key_not_found";
