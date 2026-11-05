@@ -1,7 +1,5 @@
-// share/share_manager.h - 0.1 alpha
-// Lógica pura de compartir archivos. CERO cout/cerr. Todo por callbacks.
-// La UI vive en ui/share_manager_ui.h
-
+// share/share_manager.h 
+// Lógica pura de compartir archivos. CERO cout/cerr. Todo por callbacs.
 #ifndef SHARE_MANAGER_H
 #define SHARE_MANAGER_H
 
@@ -90,7 +88,7 @@ template <typename T> inline void secure_clear(T& container) {
 }
 } // namespace SecUtil
 
-// ▼▼▼ NUEVO: eventos estructurados del share ▼▼▼
+// eventos estructurados del share 
 namespace share_log {
 
 enum class LogLevel {
@@ -132,7 +130,6 @@ enum class LogEvent {
 };
 
 } // namespace share_log
-// ▲▲▲ NUEVO ▲▲▲
 
 // ********************************************************
 // FUNCIONES AUXILIARES
@@ -141,8 +138,8 @@ inline std::string getHome() {
     const char* sudo_user = getenv("SUDO_USER");
     if (sudo_user) {
         struct passwd* pw = getpwnam(sudo_user);
-        if (pw)
-            return std::string(pw->pw_dir);
+    if (pw)
+        return std::string(pw->pw_dir);
     }
     const char* home = getenv("HOME");
     if (home)
@@ -157,8 +154,8 @@ inline std::string getDlFolder() {
     std::string home = getHome();
     std::vector<std::string> dirs = {home + "/Descargas", home + "/Downloads", home + "/downloads"};
     for (const auto& d : dirs) {
-        if (std::filesystem::exists(d))
-            return d;
+    if (std::filesystem::exists(d))
+    return d;
     }
     std::string downloads = home + "/Descargas";
     std::filesystem::create_directories(downloads);
@@ -236,10 +233,16 @@ class ShareManager {
     using LogCallback =
         std::function<void(share_log::LogLevel level, share_log::LogEvent event, const std::string& data)>;
 
-    using TrustPromptCallback = std::function<bool(const std::string& user, const std::string& fprint, bool is_server)>;
-    using SessionCallback = std::function<void(const std::string& rem_user, const std::string& rem_ip)>;
-    using FileRecvCallback = std::function<void(const std::string& filename, size_t bytes, bool ok)>;
-    using FileSendCallback = std::function<void(const std::string& filename, size_t current, size_t total, bool ok)>;
+    using TrustPromptCallback = std::function<bool(
+const std::string& user,
+const std::string& fprint, bool is_server)>;
+    using SessionCallback = std::function<void(
+const std::string& rem_user,
+const std::string& rem_ip)>;
+    using FileRecvCallback = std::function<void(
+const std::string& filename, size_t bytes, bool ok)>;
+    using FileSendCallback = std::function<void(
+const std::string& filename, size_t current, size_t total, bool ok)>;
 
     // Ciclo de vida
     ShareManager();
@@ -270,7 +273,10 @@ class ShareManager {
     // Identidad
     // ============================================================
     void setUsername(const std::string& name);
-    void setIdentity(const std::vector<uint8_t>& pub_key, const std::vector<uint8_t>& priv_key, const std::string& fp);
+    void setIdentity(
+const std::vector<uint8_t>& pub_key,
+const std::vector<uint8_t>& priv_key,
+const std::string& fp);
 
     std::string getFingerprint() const {
         return id_fprint;
@@ -312,7 +318,9 @@ class ShareManager {
     // ============================================================
     // Enviar
     // ============================================================
-    bool sendFiles(const std::vector<std::string>& file_paths, const std::string& rem_addr, int rem_port);
+    bool sendFiles(
+const std::vector<std::string>& file_paths,
+const std::string& rem_addr, int rem_port);
 
     // ============================================================
     // Recibir
@@ -390,19 +398,18 @@ class ShareManager {
     FileRecvCallback file_recv_cb_;
     FileSendCallback file_send_cb_;
 
-    // ▼▼▼ Helper de log con eventos estructurados ▼▼▼
     void log(share_log::LogLevel level, share_log::LogEvent event, const std::string& data = "") {
         if (log_cb_)
             log_cb_(level, event, data);
     }
-    // ▲▲▲
 
     // ============================================================
     // Helpers privados (implementación en .cpp)
-    // ============================================================
     void loadTrust();
     void saveTrust();
-    bool checkTrust(const std::string& rem_user, const std::string& fprint, bool is_srv);
+    bool checkTrust(
+const std::string& rem_user,
+const std::string& fprint, bool is_srv);
 
     std::vector<uint8_t> toVec(const Botan::secure_vector<uint8_t>& sec);
     Botan::secure_vector<uint8_t> toSec(const std::vector<uint8_t>& vec);
@@ -415,8 +422,12 @@ class ShareManager {
 
     bool genKyber();
     std::string hashFile(const std::string& path);
-    std::vector<uint8_t> encChunk(const std::vector<uint8_t>& data, const std::vector<uint8_t>& key);
-    std::vector<uint8_t> decChunk(const std::vector<uint8_t>& data, const std::vector<uint8_t>& key);
+    std::vector<uint8_t> encChunk(
+const std::vector<uint8_t>& data,
+const std::vector<uint8_t>& key);
+    std::vector<uint8_t> decChunk(
+const std::vector<uint8_t>& data,
+const std::vector<uint8_t>& key);
 
     size_t getFileSz(const std::string& path);
 
@@ -432,7 +443,10 @@ class ShareManager {
     void handleKemConn(int cli_sock, const std::string& cli_ip);
     void startXferSrv();
     void handleXferConn(int cli_sock, const std::string& cli_ip);
-    bool sendFile(const std::string& path, const std::string& rem_addr, int rem_port, const std::vector<uint8_t>& key);
+    bool sendFile(
+const std::string& path,
+const std::string& rem_addr, int rem_port,
+const std::vector<uint8_t>& key);
     void stopSrvs();
 };
 
