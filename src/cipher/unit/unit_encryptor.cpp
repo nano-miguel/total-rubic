@@ -203,7 +203,8 @@ FSInfo UnitEncryptor::getFSInfo(const std::string& path) {
         std::string dev, mnt, fs;
         iss >> dev >> mnt >> fs;
     if (dev == path) {
-        strncpy(info.fstype, fs.c_str(), sizeof(info.fstype) - 1);
+    strncpy(info.fstype, fs.c_str(),
+        sizeof(info.fstype) - 1);
     return info;
         }
     }
