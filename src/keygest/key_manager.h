@@ -1,4 +1,4 @@
-// keygest/key_manager.h - 0.1 alpha
+// keygest/key_manager.h - 
 // Lógica pura del gestor de claves.
 // rubic gpl3v
 #ifndef KEYGEST_KEY_MANAGER_H
@@ -35,7 +35,9 @@ using namespace std;
 
 // COMPARACION SEGURA
 
-inline bool secure_memcmp(const uint8_t* a, const uint8_t* b, size_t len) {
+inline bool secure_memcmp(
+const uint8_t* a,
+const uint8_t* b, size_t len) {
     volatile uint8_t result = 0;
     for (size_t i = 0; i < len; ++i) {
         result |= (a[i] ^ b[i]);
@@ -165,8 +167,10 @@ public:
 
     void setLogCallback(LogCallback cb) { log_cb_ = std::move(cb); }
 
-    void setUserPasswordSecure(const Botan::secure_vector<uint8_t>& password);
-    void setUsername(const std::string& name);
+    void setUserPasswordSecure(
+const Botan::secure_vector<uint8_t>& password);
+    void setUsername(
+const std::string& name);
     void saveKeys();
 
     const std::map<std::string, KeyInfo>& getKeys() const { return keys; }
@@ -180,7 +184,8 @@ public:
         return it != keys.end() && it->second.is_active;
     }
 
-    Botan::secure_vector<uint8_t> getKeyValue(const std::string& keyName) const {
+    Botan::secure_vector<uint8_t> getKeyValue(
+const std::string& keyName) const {
         auto it = keys.find(keyName);
         if (it != keys.end() && it->second.is_active) {
         return it->second.key_value;
@@ -211,8 +216,11 @@ const std::string& keyName) const {
 
     // MÉTODOS PÚBLICOS PARA LA UI
 
-    bool verifyPassword(const Botan::secure_vector<uint8_t>& inputPass);
-    bool isPasswordVerified() const { return passwordVerified; }
+    bool verifyPassword(
+const Botan::secure_vector<uint8_t>& inputPass);
+    bool isPasswordVerified() 
+const { 
+        return passwordVerified; }
 
     std::string createKey(
 const std::string& keyName,
