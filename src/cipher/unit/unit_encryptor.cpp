@@ -1,7 +1,6 @@
-// cipher/unit/unit_encryptor.cpp - 0.1 alpha
+// cipher/unit/unit_encryptor.cpp 
 #include "../unit_encryptor.h"
 #include "../../keygest/key_manager.h"
-// #include "../../rubic_core.h" // ELIMINADO: No es necesario en el núcleo
 
 #include <limits.h>
 #include <sys/wait.h>
@@ -337,10 +336,18 @@ void UnitEncryptor::reloadCustomConfig() { settings_.load(); }
 bool UnitEncryptor::validateUnitProcess(
     const StorUnit& unit, bool encrypt,
     const Botan::secure_vector<uint8_t>& master_key) {
-    if (encrypt && unit.is_encrypted)   { log(LogLevel::Warning, LogEvent::UnitAlreadyEncrypted, ""); return false; }
-    if (!encrypt && !unit.is_encrypted) { log(LogLevel::Warning, LogEvent::UnitNotEncrypted, "");     return false; }
-    if (unit.is_system_disk)            { log(LogLevel::Error,   LogEvent::SystemDiskBlocked, "");    return false; }
-    if (unit.is_mounted)                { log(LogLevel::Warning, LogEvent::UnitMounted, unit.mount_point); return false; }
+    if (encrypt && unit.is_encrypted)   { 
+        log(LogLevel::Warning, LogEvent::UnitAlreadyEncrypted, "");
+        return false; }
+    if (!encrypt && !unit.is_encrypted) { 
+        log(LogLevel::Warning, LogEvent::UnitNotEncrypted, "");
+        return false; }
+    if (unit.is_system_disk)            { 
+        log(LogLevel::Error,   LogEvent::SystemDiskBlocked, "");
+        return false; }
+    if (unit.is_mounted)                { 
+        log(LogLevel::Warning, LogEvent::UnitMounted, unit.mount_point);
+        return false; }
     if (master_key.empty() || master_key.size() != 32) {
         log(LogLevel::Error, LogEvent::MasterKeyInvalid, "");
     return false;
@@ -376,7 +383,9 @@ bool UnitEncryptor::processUnit(StorUnit& unit, bool encrypt,
     return ok;
 }
 
-bool UnitEncryptor::doProcess(const StorUnit& unit, const Botan::secure_vector<uint8_t>& master_key, bool encrypt) {
+bool UnitEncryptor::doProcess(
+const StorUnit& unit,
+const Botan::secure_vector<uint8_t>& master_key, bool encrypt) {
     ThCfg cfg = settings_.resolveConfig(unit.device_type);
 
     log(LogLevel::Info, LogEvent::DeviceTypeDetected, unit.getDevTypeStr());
@@ -484,7 +493,9 @@ bool UnitEncryptor::doProcess(const StorUnit& unit, const Botan::secure_vector<u
 bool UnitEncryptor::cleanHeader(const StorUnit& unit) {
     log(LogLevel::Info, LogEvent::CleanupHeader, unit.device_path);
     int fd = open(unit.device_path.c_str(), O_RDWR | O_SYNC);
-    if (fd < 0) { log(LogLevel::Error, LogEvent::DeviceOpenFailed, strerror(errno)); return false; }
+    if (fd < 0) {
+    log(LogLevel::Error, LogEvent::DeviceOpenFailed, strerror(errno));
+        return false; }
     size_t hsz = HEADER_SECTORS * SECTOR_SIZE;
     std::vector<uint8_t> zeros(hsz, 0);
 
@@ -502,7 +513,9 @@ bool UnitEncryptor::cleanHeader(const StorUnit& unit) {
     return true;
 }
 
-bool UnitEncryptor::restoreHeader(const StorUnit& unit, const Botan::secure_vector<uint8_t>& master_key) {
+bool UnitEncryptor::restoreHeader(
+const StorUnit& unit,
+const Botan::secure_vector<uint8_t>& master_key) {
     log(LogLevel::Info, LogEvent::HeaderRestoring, "");
     EncUnitHdr hdr;
     if (!backup_mgr.loadHeader(unit.device_path, hdr, master_key)) {
@@ -525,10 +538,11 @@ bool UnitEncryptor::restoreHeader(const StorUnit& unit, const Botan::secure_vect
 }
 
 // ========================================================================
-// SISTEMA OPERATIVO Y PRIVILEGIOS (Core puro, sin traducciones)
-// ========================================================================
+// SISTEMA OPERATIVO Y PRIVILEGIo
 
-int UnitEncryptor::safeExec(const std::vector<std::string>& args, bool need_sudo) {
+int UnitEncryptor::safeExec(
+const std::vector<std::string>& args,
+bool need_sudo) {
     if (args.empty()) return -1;
     pid_t pid = fork();
     if (pid == -1) return -1;
@@ -547,7 +561,9 @@ int UnitEncryptor::safeExec(const std::vector<std::string>& args, bool need_sudo
     return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-bool UnitEncryptor::mountDevice(const StorUnit& u, const std::string& point) {
+bool UnitEncryptor::mountDevice(
+const StorUnit& u,
+const std::string& point) {
     log(LogLevel::Info, LogEvent::Mounting, point);
     safeExec({"mkdir", "-p", point}, true);
     std::string fs = u.filesystem;
@@ -576,7 +592,9 @@ bool UnitEncryptor::unmountDevice(StorUnit& u) {
     return true;
 }
 
-bool UnitEncryptor::formatDevice(const StorUnit& unit, const std::string& fstype) {
+bool UnitEncryptor::formatDevice(
+const StorUnit& unit,
+const std::string& fstype) {
     log(LogLevel::Info, LogEvent::FormatStart, fstype);
     int res = -1;
     if (fstype == "vfat" || fstype == "fat32")
@@ -596,7 +614,9 @@ bool UnitEncryptor::formatDevice(const StorUnit& unit, const std::string& fstype
     return false;
 }
 
-bool UnitEncryptor::executeElevatedOp(const StorUnit& unit, bool encrypt, const Botan::secure_vector<uint8_t>& master_key) {
+bool UnitEncryptor::executeElevatedOp(
+const StorUnit& unit, bool encrypt,
+const Botan::secure_vector<uint8_t>& master_key) {
     if (master_key.empty() || master_key.size() != 32) return false;
 
     char keyfile[] = "/dev/shm/.rubic_key_XXXXXX";
@@ -637,7 +657,6 @@ bool UnitEncryptor::executeElevatedOp(const StorUnit& unit, bool encrypt, const 
 
 // ========================================================================
 // WORKER CLI (El --unit-op, aquí se usa "sudo" y texto crudo)
-// ========================================================================
 
 int UnitEncryptor::tryRunAsWorker(int argc, char* argv[]) {
     if (argc < 2) return -1;
