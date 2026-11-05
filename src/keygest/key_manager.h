@@ -175,11 +175,13 @@ const std::string& name);
 
     const std::map<std::string, KeyInfo>& getKeys() const { return keys; }
 
-    bool hasKey(const std::string& keyName) const {
+    bool hasKey(
+const std::string& keyName) const {
         return keys.find(keyName) != keys.end();
     }
 
-    bool isKeyActive(const std::string& keyName) const {
+    bool isKeyActive(
+const std::string& keyName) const {
         auto it = keys.find(keyName);
         return it != keys.end() && it->second.is_active;
     }
@@ -251,11 +253,10 @@ const Botan::secure_vector<uint8_t>& accessCode,
     }
 };
 
-// ============================================================
-// Persistencia en disco (implementado en key_pipeline.cpp)
-//   save: serialize → compress(zlib) → encrypt(Argon2id+GCM) → write atómico
-//   load: read → decrypt → decompress → deserialize
-// ============================================================
+/*
+ Persistencia en disco (implementado en key_pipeline.cpp)
+   save: serialize → compress(zlib) → encrypt(Argon2id+GCM) → write atómico
+   load: read → decrypt → decompress → deserialize */
 namespace key_persist {
 bool save(
 const std::map<std::string, KeyInfo>& keys,          
