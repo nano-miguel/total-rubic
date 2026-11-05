@@ -205,8 +205,8 @@ std::vector<std::string> ShareManager::expandFiles(const std::string& path) {
     } else if (std::filesystem::is_directory(path)) {
         try {
             for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
-                if (std::filesystem::is_regular_file(entry.path())) {
-                    files.push_back(entry.path().string());
+            if (std::filesystem::is_regular_file(entry.path())) {
+                files.push_back(entry.path().string());
                 }
             }
         } catch (...) {
@@ -240,7 +240,8 @@ std::string ShareManager::getCurrentIP() {
     return ip;
 }
 
-bool ShareManager::parseAddress(const std::string& input, std::string& addr, int& port) {
+bool ShareManager::parseAddress(
+const std::string& input, std::string& addr, int& port) {
     std::string ad = input;
     ad.erase(std::remove(ad.begin(), ad.end(), ' '), ad.end());
 
