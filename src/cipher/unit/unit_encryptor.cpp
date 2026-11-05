@@ -640,8 +640,7 @@ const Botan::secure_vector<uint8_t>& master_key) {
     close(kfd);
     if (!write_ok) { unlink(keyfile); return false; }
 
-    char exe[PATH_MAX];
-    ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+    char exe[PATH_MAX];ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
     if (n <= 0) { unlink(keyfile); return false; }
     exe[n] = '\0';
 
@@ -652,10 +651,8 @@ const Botan::secure_vector<uint8_t>& master_key) {
     if (pid < 0) { unlink(keyfile);return false; }
     if (pid == 0) {
         setenv("LANG", cur_lang.c_str(), 1);
-        execlp("sudo", "sudo", exe, "--unit-op",
-               unit.device_path.c_str(),
-               encrypt ? "encrypt" : "decrypt",
-               "--keyfile", keyfile, nullptr);
+        execlp("sudo", "sudo", exe, "--unit-op",unit.device_path.c_str(),
+            encrypt ? "encrypt" : "decrypt","--keyfile", keyfile, nullptr);
         _exit(127);
     }
 
