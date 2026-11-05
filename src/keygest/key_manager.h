@@ -188,10 +188,12 @@ public:
         return Botan::secure_vector<uint8_t>();
     }
 
-    bool activateKey(const std::string& keyName,
-                     const Botan::secure_vector<uint8_t>& accessCode);
+    bool activateKey(
+const std::string& keyName,
+const Botan::secure_vector<uint8_t>& accessCode);
 
-    bool keyRequiresActivation(const std::string& keyName) const {
+    bool keyRequiresActivation(
+const std::string& keyName) const {
         auto it = keys.find(keyName);
         if (it == keys.end()) return false;
         return it->second.requires_access;
@@ -212,17 +214,19 @@ public:
     bool verifyPassword(const Botan::secure_vector<uint8_t>& inputPass);
     bool isPasswordVerified() const { return passwordVerified; }
 
-    std::string createKey(const std::string& keyName,
-                          const std::string& usage,
-                          Botan::secure_vector<uint8_t> accessCode,
+    std::string createKey(
+const std::string& keyName,
+const std::string& usage,Botan::secure_vector<uint8_t> accessCode,
                           std::string& error_out);
 
-    bool deleteKey(const std::string& keyName,
-                   const Botan::secure_vector<uint8_t>& accessCode,
+    bool deleteKey(
+const std::string& keyName,                  
+const Botan::secure_vector<uint8_t>& accessCode,
                    std::string& error_out);
 
-    bool toggleKey(const std::string& keyName,
-                   const Botan::secure_vector<uint8_t>& accessCode,
+    bool toggleKey(
+const std::string& keyName,                   
+const Botan::secure_vector<uint8_t>& accessCode,
                    std::string& error_out);
 
     std::string getKeysFilePathPublic() const;
@@ -245,13 +249,14 @@ public:
 //   load: read → decrypt → decompress → deserialize
 // ============================================================
 namespace key_persist {
-bool save(const std::map<std::string, KeyInfo>& keys,
-          const std::string& filepath,
-          const Botan::secure_vector<uint8_t>& user_password);
+bool save(
+const std::map<std::string, KeyInfo>& keys,          
+const std::string& filepath,        
+const Botan::secure_vector<uint8_t>& user_password);
 
-bool load(const std::string& filepath,
-          std::map<std::string, KeyInfo>& out_keys,
-          const Botan::secure_vector<uint8_t>& user_password);
+bool load(
+const std::string& filepath,std::map<std::string, KeyInfo>& out_keys,
+const Botan::secure_vector<uint8_t>& user_password);
 } // namespace key_persist
 
 #endif // KEYGEST_KEY_MANAGER_H
