@@ -125,7 +125,8 @@ UnitEncryptor::UnitEncryptor() : last_refresh(0) {
 
 // FIX: Ahora usa error_out en vez de throw
 bool UnitEncryptor::setDirectKeyHex(
-const std::string& hexKey, std::string& error_out) {
+const std::string& hexKey,
+    std::string& error_out) {
     if (hexKey.length() != 64) {
         useDirectKey = false;
         error_out = "err_hex_len_64"; 
@@ -141,7 +142,8 @@ const std::string& hexKey, std::string& error_out) {
         useDirectKey = true;
         keyManager = nullptr;
         return true;
-    }   catch (const std::exception&) {
+    }   catch (
+        const std::exception&) {
         useDirectKey = false;error_out = "err_hex_invalid";
         return false;
     }
@@ -159,7 +161,8 @@ void UnitEncryptor::refreshUnits() {
     }
 }
 
-bool UnitEncryptor::isPhysicalDevice(const std::string& p) {
+bool UnitEncryptor::isPhysicalDevice(
+const std::string& p) {
     return p.find("/dev/loop") == std::string::npos && p.find("/dev/ram") == std::string::npos;
 }
 
@@ -321,8 +324,7 @@ std::vector<StorUnit> UnitEncryptor::detectUnits() {
         if (fd >= 0) {
             u.is_encrypted = isUnitEncrypt(dev);
             u.fs_info = getFSInfo(dev);
-            u.label = u.fs_info.label;
-                        close(fd);
+            u.label = u.fs_info.label;close(fd);
                     } 
         else if (errno == EACCES || errno == EPERM) {
             u.requires_elevation = true; }
@@ -470,7 +472,8 @@ const Botan::secure_vector<uint8_t>& master_key, bool encrypt) {
     uint64_t data_size = (total_sectors - data_start_sector) * SECTOR_SIZE;
 
     unit_pipeline::ProcessContext pipe_ctx{
-        fd, data_size, data_start_sector, cfg, unit.device_type, xts_key, encrypt,
+        fd, data_size, data_start_sector, cfg,
+            unit.device_type, xts_key, encrypt,
         speed_meter, stop_requested,log_cb,
         [this](uint64_t c, uint64_t t, double s) { this->progress(c, t, s); }
     };
@@ -481,7 +484,8 @@ const Botan::secure_vector<uint8_t>& master_key, bool encrypt) {
         uint8_t zeros[512] = {0};
         if (safe_pwrite(fd, zeros, sizeof(zeros), 0) && fsync(fd) == 0) {
         log(LogLevel::Info, LogEvent::Sector0Wiped, "");
-        } else {
+        } 
+        else {
         log(LogLevel::Warning, LogEvent::Sector0WipeFailed, "");
         }
     }
@@ -493,19 +497,23 @@ const Botan::secure_vector<uint8_t>& master_key, bool encrypt) {
 
         if (safe_pwrite(fd, zeros.data(), hsz, HEADER_OFFSET_SECTORS * SECTOR_SIZE)) {
             if (fsync(fd) == 0) {
-            log(LogLevel::Success, LogEvent::HeaderRemoved, "");
+            log(LogLevel::Success,
+                LogEvent::HeaderRemoved, "");
             } 
             else {
-            log(LogLevel::Error, LogEvent::HeaderCleanFsyncFailed, "");
+            log(LogLevel::Error,
+                LogEvent::HeaderCleanFsyncFailed, "");
             pipeline_ok = false;
             }
         }   else {
-            log(LogLevel::Error, LogEvent::HeaderCleanWriteFailed, "");
+            log(LogLevel::Error,
+                LogEvent::HeaderCleanWriteFailed, "");
             pipeline_ok = false;
         }
 
         if (backup_mgr.removeBackup(unit.device_path))
-            log(LogLevel::Success, LogEvent::BackupRemoved, "");
+            log(LogLevel::Success,
+                LogEvent::BackupRemoved, "");
     }
 
     close(fd);
@@ -519,7 +527,8 @@ const StorUnit& unit) {
         unit.device_path);
     int fd = open(unit.device_path.c_str(), O_RDWR | O_SYNC);
     if (fd < 0) {
-    log(LogLevel::Error, LogEvent::DeviceOpenFailed, strerror(errno));
+    log(LogLevel::Error,
+        LogEvent::DeviceOpenFailed, strerror(errno));
         return false; }
     size_t hsz = HEADER_SECTORS * SECTOR_SIZE;
     std::vector<uint8_t> zeros(hsz, 0);
