@@ -1,6 +1,5 @@
 // cipher/unit/unit_header.cpp 
 #include "../unit_encryptor.h"
-
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
@@ -11,10 +10,57 @@
 #include <span>
 #include <algorithm>
 
-/**
- * Deriva una subclave usando HKDF-SHA512.
- */
-Botan::secure_vector<uint8_t> KeyDeriv::deriveSubKey(
+
+// HELPERS (I/O y Entorno aislados)
+namespace {
+    bool read_file_bytes(
+        const std::string& path,
+        Botan::secure_vector<uint8_t>& out) {
+        std::ifstream file(path,
+        std::ios::binary | std::ios::ate);
+        if (!file.is_open()) 
+            return false;
+        
+        std::streamsize size = file.tellg();
+        if (size <= 0) 
+            return false;
+        
+        out.resize(static_cast<size_t>(size));
+        file.seekg(0, std::ios::beg);
+            return file.read(reinterpret_cast<char*>(
+            out.data()), size).good();
+    }
+
+    bool write_file_bytes(
+        const std::string& path,
+         const Botan::secure_vector<uint8_t>& data) {
+        std::ofstream file(path, std::ios::binary);
+        if (!file.is_open()) 
+            return false;
+        
+        file.write(reinterpret_cast<const char*>(
+            data.data()),
+            data.size());
+        file.close();chmod(
+            path.c_str(), 0600);
+            return file.good();
+    }
+
+    //purea mierda
+    std::string get_backup_dir() {
+        const char* xdg = getenv("XDG_DATA_HOME");
+        if (xdg && xdg[0]) 
+            return std::string(xdg) + "/RUBIC-A/backups";
+
+        const char* home = getenv("HOME");
+        if (home && home[0])
+            return std::string(home) + "/.local/share/RUBIC-A/backups";
+            return "/tmp/RUBIC-A/backups";
+    }
+}
+
+//  derivamo la clave de key
+ Botan::secure_vector<uint8_t> KeyDeriv::deriveSubKey(
     const Botan::secure_vector<uint8_t>& master_key,
     const Botan::secure_vector<uint8_t>& salt,
     size_t key_length) {
@@ -22,260 +68,230 @@ Botan::secure_vector<uint8_t> KeyDeriv::deriveSubKey(
         auto kdf = Botan::KDF::create_or_throw("HKDF(SHA-512)");
         Botan::secure_vector<uint8_t> derived_key(key_length);
         std::string info_str = KEY_DERIVATION_INFO;
-
         kdf->derive_key(
-            std::span<uint8_t>(derived_key.data(), derived_key.size()),
-            std::span<const uint8_t>(master_key.data(), master_key.size()),
-            std::span<const uint8_t>(salt.data(), salt.size()),
-            std::span<const uint8_t>(
-            reinterpret_cast<const uint8_t*>(info_str.data()),
+
+        std::span<uint8_t>(
+            derived_key.data(),
+            derived_key.size()),
+
+        std::span<const uint8_t>(
+            master_key.data(),
+            master_key.size()),
+
+        std::span<const uint8_t>(
+            salt.data(),
+            salt.size()),
+
+        std::span<const uint8_t>(
+            reinterpret_cast<const uint8_t*>(
+            info_str.data()),
             info_str.size()));
 
         return derived_key;
-    }   catch (const std::exception&) {
-        return {};
-    }
+    } catch (const std::exception&) { 
+        return {}; }
 }
 
-Botan::secure_vector<uint8_t> KeyDeriv::generateSalt(size_t size) {
+ Botan::secure_vector<uint8_t> KeyDeriv::generateSalt(size_t size) {
     try {
         Botan::AutoSeeded_RNG rng;
         Botan::secure_vector<uint8_t> salt(size);
-        rng.randomize(salt.data(), salt.size());
-
+            rng.randomize(
+            salt.data(),
+            salt.size());
         return salt;
-    }   catch (const std::exception&) {
-        return {};
-    }
+    } catch (const std::exception&) { 
+        return {}; }
 }
 
-/**
- * Inicializa el MAC para validar la integridad del header
- * Usa KMAC-256 con fallback a HMAC(SHA-3)
- */
-KMACProc::KMACProc(const Botan::secure_vector<uint8_t>& key_data) {
+
+/*flojo de kmac*/
+ KMACProc::KMACProc(
+    const Botan::secure_vector<uint8_t>& key_data) {
     key = key_data;
-
-    try {
-        Kmac = Botan::MessageAuthenticationCode::create("KMAC-256(512)");
-    }   catch (const std::exception&) {
-        Kmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-3(512))");
-        if (!Kmac)
-        Kmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-512)");
+    try {      Kmac = Botan::MessageAuthenticationCode::create("KMAC-256(512)"); } 
+    catch (const std::exception&) {
+               Kmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-3(512))");
+    if (!Kmac) Kmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-512)");
     }
-
-    if (!Kmac)
-    throw std::runtime_error("No se pudo crear el MAC criptográfico"); //esta cosa va en unit events porqueria
+    if (!Kmac) 
+    throw std::runtime_error("No se pudo crear el MAC criptográfico"); //mipoar porqueria de mird a deuramsn esta mader 
     Kmac->set_key(key);
 }
 
-Botan::secure_vector<uint8_t> KMACProc::calculate(const uint8_t* data, size_t size) {
+Botan::secure_vector<uint8_t> KMACProc::calculate(
+    const uint8_t* data, size_t size) {
     Kmac->update(data, size);
     return Kmac->final();
 }
 
-/* Comparación en tiempo constante para evitar ataques de timing.*/
-bool KMACProc::verify
-    (const uint8_t* data, size_t size, 
-     const uint8_t* expected_Kmac, size_t Kmac_size) {
-
+bool KMACProc::verify(
+    const uint8_t* data,size_t size,
+    const uint8_t* expected_Kmac, size_t Kmac_size) {
     auto calc = calculate(data, size);
     if (calc.size() != Kmac_size)
-    return false;
-
-    volatile uint8_t diff = 0;
-    for (size_t i = 0; i < Kmac_size; i++)
-        diff |= (calc[i] ^ expected_Kmac[i]);
-
+    return false;volatile uint8_t diff = 0;
+    for (size_t i = 0; i < Kmac_size; i++) diff |= (calc[i] ^ expected_Kmac[i]);
     return diff == 0;
 }
 
-/**
- * Obtiene la ruta del backup del header
- * Se guarda en carpeta XDG pense en disco pero no por meter basura
- */
-std::string HdrBackup::getBackupPath(
-    const std::string& device_path) {
+
+/*respaldo de clave*/
+std::string HdrBackup::getBackupPath(const std::string& device_path) {
     std::string devname = device_path;
+    if (devname.find("/dev/") == 0) devname = devname.substr(5);
+    std::replace(
+        devname.begin(),
+        devname.end(), '/', '_');
 
-    if (devname.find("/dev/") == 0)devname = devname.substr(5);
-    std::replace(devname.begin(), devname.end(), '/', '_');
+    auto hash = Botan::HashFunction::create("SHA-256");
+    hash->update(devname);
 
-    auto hash = Botan::HashFunction::create("SHA-256");hash->update(devname);
     std::string hashed = Botan::hex_encode(hash->final()).substr(0, 16);
-
-    const char* xdg = getenv("XDG_DATA_HOME");
-    std::string base;
-
-    if (xdg && xdg[0]) {
-        base = std::string(xdg) 
-           + "/RUBIC-A/backups";
-    } 
-    else {
-        const char* home = getenv("HOME");
-        base = home && home[0]? std::string(home) 
-           + "/.local/share/RUBIC-A/backups"
-           : "/var/lib/rubic-a/backups";
-    }
-
+    std::string base = get_backup_dir(); // Acá llamamos a la función limpia
     std::filesystem::create_directories(base);
     std::filesystem::permissions(base,
-     std::filesystem::perms::owner_all,
-     std::filesystem::perm_options::replace);
-
+    std::filesystem::perms::owner_all,
+    std::filesystem::perm_options::replace);
     return base + "/.rubic_" + hashed + ".dat";
+}
+
+Botan::secure_vector<uint8_t> HdrBackup::deriveBackupKey(
+    const std::string& device_path,
+    const Botan::secure_vector<uint8_t>& master_key) {
+    if (master_key.size() != 32) return {};
+    try {
+        auto kdf = Botan::KDF::create("HKDF(SHA-512)");
+    if (!kdf) 
+        return {};
+        Botan::secure_vector<uint8_t> out(32);
+           std::string info = "RUBIC_HEADER_BACKUP_V1";
+                kdf->derive_key(
+           std::span<uint8_t>(out.data(),
+                out.size()),
+           std::span<const uint8_t>(
+                master_key.data(),
+                master_key.size()),
+           std::span<const uint8_t>(
+            reinterpret_cast<const uint8_t*>(
+                device_path.data()),
+                device_path.size()),
+           std::span<const uint8_t>(
+            reinterpret_cast<const uint8_t*>(
+                info.data()),
+                info.size()));
+        return out;
+    } catch (const std::exception&) { 
+        return {}; }
 }
 
 Botan::secure_vector<uint8_t> HdrBackup::encryptBackup(
     const EncUnitHdr& header,
     const Botan::secure_vector<uint8_t>& key) {
     try {
-        auto cipher = Botan::Cipher_Mode::create("AES-256/GCM",Botan::Cipher_Dir::Encryption);
-        if (!cipher)
+        auto cipher = Botan::Cipher_Mode::create("AES-256/GCM", Botan::Cipher_Dir::Encryption);
+        if (!cipher) 
         return {};
 
         Botan::secure_vector<uint8_t> data(sizeof(header));
         std::memcpy(data.data(), &header, sizeof(header));
-
-        cipher->set_key(key);
+            cipher->set_key(key);
 
         Botan::secure_vector<uint8_t> nonce(12);
         Botan::AutoSeeded_RNG rng;
+            rng.randomize(
+            nonce.data(),
+            nonce.size());
 
-        rng.randomize(nonce.data(), nonce.size());
-        cipher->start(nonce);
-        cipher->finish(data);
+            cipher->start(nonce);
+            cipher->finish(data);
 
         Botan::secure_vector<uint8_t> result;
-        result.insert(result.end(), nonce.begin(), nonce.end());
-        result.insert(result.end(), data.begin(), data.end());
+        result.insert(
+            result.end(),
+            nonce.begin(),
+            nonce.end());
+
+        result.insert(
+            result.end(),
+            data.begin(),
+            data.end());
         return result;
-    }   catch (const std::exception&) {
-        return {};
-    }
+    } catch (const std::exception&) { 
+        return {}; }
 }
 
 bool HdrBackup::decryptBackup(
-    const std::string& backup_path,EncUnitHdr& header,
+    const std::string& backup_path, EncUnitHdr& header,
     const Botan::secure_vector<uint8_t>& key) {
-    std::ifstream file(backup_path, std::ios::binary);
-    if (!file.is_open())
-    return false;
-
     Botan::secure_vector<uint8_t> enc;
-    size_t size = file.tellg();
-    file.seekg(0, std::ios::end);
-    file.seekg(0, std::ios::beg);
-    enc.resize(size);
-    file.read(reinterpret_cast<char*>(enc.data()), size);
-    file.close();
-
-    if (enc.size() < 12 + 16)
-    return false;
-
-    try {
-        auto cipher = Botan::Cipher_Mode::create("AES-256/GCM", Botan::Cipher_Dir::Decryption);
-        if (!cipher)
+    if (!read_file_bytes(backup_path, enc)) 
+        return false; 
+    if (enc.size() < 12 + 16) 
         return false;
 
-        Botan::secure_vector<uint8_t> nonce(enc.begin(), enc.begin() + 12);
-        Botan::secure_vector<uint8_t> ct(enc.begin() + 12, enc.end());
+    try {
+        Botan::secure_vector<uint8_t> nonce(
+            enc.begin(),
+            enc.begin() + 12);
+        Botan::secure_vector<uint8_t> ct(
+            enc.begin() + 12,
+            enc.end());
 
-        cipher->set_key(key);
-        cipher->start(nonce);
-        cipher->finish(ct);
-
+        auto cipher = Botan::Cipher_Mode::create("AES-256/GCM",
+        Botan::Cipher_Dir::Decryption);
+        if (!cipher) 
+        return false;
+            cipher->set_key(key);
+            cipher->start(nonce);
+            cipher->finish(ct);
         if (ct.size() != sizeof(header))
         return false;
-
+        
         std::memcpy(&header, ct.data(), sizeof(header));
         return true;
-    }   catch (const std::exception&) {
-        return false;
-    }
-}
-
-/*
-  Deriva la clave para el backup del header
-  Depende tanto de la master_key como del path del dispositivo.
-  evita que alguien pueda descifrar el backup solo conociendo el path
- */
-Botan::secure_vector<uint8_t> HdrBackup::deriveBackupKey(
-    const std::string& device_path,
-    const Botan::secure_vector<uint8_t>& master_key) {
-    if (master_key.size() != 32)
-    return {};
-
-    try {
-        auto kdf = Botan::KDF::create("HKDF(SHA-512)");
-        if (!kdf)
-        return {};
-
-        Botan::secure_vector<uint8_t> out(32);
-        std::string info = "RUBIC_HEADER_BACKUP_V1";
-
-        kdf->derive_key(
-           std::span<uint8_t>(out.data(), out.size()),
-           std::span<const uint8_t>(master_key.data(), master_key.size()),
-           std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(device_path.data()),device_path.size()),
-           std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(info.data()),info.size()));
-        return out;
-    }   catch (const std::exception&) {
-        return {};
-    }
+    } catch (const std::exception&) { 
+        return false; }
 }
 
 bool HdrBackup::saveHeader(
-    const std::string& device_path,const EncUnitHdr& header, 
+    const std::string& device_path,
+    const EncUnitHdr& header,
     const Botan::secure_vector<uint8_t>& master_key) {
-    if (master_key.size() != 32)
-    return false;
-
     auto bk = deriveBackupKey(device_path, master_key);
-    if (bk.empty())
-    return false;
+    if (bk.empty()) 
+        return false;
 
     auto enc = encryptBackup(header, bk);
     if (enc.empty())
-    return false;
+        return false;
 
-    std::string path = getBackupPath(device_path);
-    std::ofstream file(path, std::ios::binary);
-    if (!file.is_open())
-    return false;
-
-    file.write(reinterpret_cast<const char*>(enc.data()), enc.size());
-    file.close();
-    chmod(path.c_str(), 0600);
-    return true;
+    return write_file_bytes(
+        getBackupPath(device_path), enc);
 }
 
 bool HdrBackup::loadHeader(
-    const std::string& device_path,EncUnitHdr& header,
+    const std::string& device_path, EncUnitHdr& header,
     const Botan::secure_vector<uint8_t>& master_key) {
-
-    if (master_key.size() != 32)
-    return false;
-
     auto bk = deriveBackupKey(device_path, master_key);
-    if (bk.empty())
-    return false;
-    return decryptBackup
+    if (bk.empty()) 
+        return false;
 
- (getBackupPath(device_path), header, bk);
+    return decryptBackup(
+        getBackupPath(device_path),header, bk);
 }
 
 bool HdrBackup::backupExists(
     const std::string& device_path) {
     struct stat st;
-    return stat
 
- (getBackupPath(device_path).c_str(), &st) == 0;
+    return stat(
+        getBackupPath(device_path).c_str(),&st) == 0;
 }
 
 bool HdrBackup::removeBackup(
-     const std::string& device_path) {
-     return unlink
+    const std::string& device_path) {
 
- (getBackupPath(device_path).c_str()) == 0;
+    return unlink(
+        getBackupPath(device_path).c_str()) == 0;
 }
