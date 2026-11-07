@@ -30,22 +30,25 @@ namespace {
             return file.read(reinterpret_cast<char*>(
             out.data()), size).good();
     }
-
     bool write_file_bytes(
         const std::string& path,
-         const Botan::secure_vector<uint8_t>& data) {
+        const Botan::secure_vector<uint8_t>& data) {
         std::ofstream file(path, std::ios::binary);
         if (!file.is_open()) 
             return false;
-        
+
+    // fchmod sobre el descriptor (Linux: std::ofstream::rdbuf()->fd())
+    if (fchmod(file.rdbuf()->fd(), 0600) != 0) {
+        file.close();
+        return false;
+    }
         file.write(reinterpret_cast<const char*>(
             data.data()),
             data.size());
-        file.close();chmod(
-            path.c_str(), 0600);
-            return file.good();
+            file.close();
+        return file.good();
+}
     }
-
     //purea mierda
     std::string get_backup_dir() {
         const char* xdg = getenv("XDG_DATA_HOME");
@@ -57,7 +60,7 @@ namespace {
             return std::string(home) + "/.local/share/RUBIC-A/backups";
             return "/tmp/RUBIC-A/backups";
     }
-}
+
 
 //  derivamo la clave de key
  Botan::secure_vector<uint8_t> KeyDeriv::deriveSubKey(
