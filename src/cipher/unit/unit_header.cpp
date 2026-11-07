@@ -23,32 +23,38 @@ namespace {
         
         std::streamsize size = file.tellg();
         if (size <= 0) 
-            return false;
-        
-        out.resize(static_cast<size_t>(size));
-        file.seekg(0, std::ios::beg);
-            return file.read(reinterpret_cast<char*>(
+            return false;out.resize(
+
+            static_cast<size_t>(size));
+            file.seekg(0, std::ios::beg);
+
+            return file.read(
+
+            reinterpret_cast<char*>(
             out.data()), size).good();
     }
-    bool write_file_bytes(
+        bool write_file_bytes(
         const std::string& path,
         const Botan::secure_vector<uint8_t>& data) {
+        
         std::ofstream file(path, std::ios::binary);
         if (!file.is_open()) 
             return false;
 
-    // fchmod sobre el descriptor (Linux: std::ofstream::rdbuf()->fd())
-    if (fchmod(file.rdbuf()->fd(), 0600) != 0) {
-        file.close();
-        return false;
-    }
         file.write(reinterpret_cast<const char*>(
             data.data()),
             data.size());
-            file.close();
-        return file.good();
-}
+        file.close();
+
+        // Aplicamos los permisos (owner_read | owner_write) de forma portable
+        std::filesystem::permissions(path, 
+        std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
+        std::filesystem::perm_options::replace);
+
+        return true;
     }
+
+
     //purea mierda
     std::string get_backup_dir() {
         const char* xdg = getenv("XDG_DATA_HOME");
@@ -58,9 +64,9 @@ namespace {
         const char* home = getenv("HOME");
         if (home && home[0])
             return std::string(home) + "/.local/share/RUBIC-A/backups";
-            return "/tmp/RUBIC-A/backups";
-    }
-
+            return "/tmp/RUBIC-A/backups";  }
+}          
+       
 
 //  derivamo la clave de key
  Botan::secure_vector<uint8_t> KeyDeriv::deriveSubKey(
@@ -112,9 +118,8 @@ namespace {
  KMACProc::KMACProc(
     const Botan::secure_vector<uint8_t>& key_data) {
     key = key_data;
-    try {      Kmac = Botan::MessageAuthenticationCode::create("KMAC-256(512)"); } 
-    catch (const std::exception&) {
-               Kmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-3(512))");
+    try {  Kmac = Botan::MessageAuthenticationCode::create("KMAC-256(512)"); } 
+    catch (const std::exception&) {Kmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-3(512))");
     if (!Kmac) Kmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-512)");
     }
     if (!Kmac) 
@@ -133,14 +138,15 @@ bool KMACProc::verify(
     const uint8_t* expected_Kmac, size_t Kmac_size) {
     auto calc = calculate(data, size);
     if (calc.size() != Kmac_size)
-    return false;volatile uint8_t diff = 0;
+    return false; volatile uint8_t diff = 0;
     for (size_t i = 0; i < Kmac_size; i++) diff |= (calc[i] ^ expected_Kmac[i]);
     return diff == 0;
 }
 
 
 /*respaldo de clave*/
-std::string HdrBackup::getBackupPath(const std::string& device_path) {
+std::string HdrBackup::getBackupPath(
+    const std::string& device_path) {
     std::string devname = device_path;
     if (devname.find("/dev/") == 0) devname = devname.substr(5);
     std::replace(
@@ -192,7 +198,8 @@ Botan::secure_vector<uint8_t> HdrBackup::encryptBackup(
     const EncUnitHdr& header,
     const Botan::secure_vector<uint8_t>& key) {
     try {
-        auto cipher = Botan::Cipher_Mode::create("AES-256/GCM", Botan::Cipher_Dir::Encryption);
+        auto cipher = Botan::Cipher_Mode::create("AES-256/GCM",
+        Botan::Cipher_Dir::Encryption);
         if (!cipher) 
         return {};
 
