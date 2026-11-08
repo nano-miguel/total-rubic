@@ -68,7 +68,8 @@ bool UnitEncryptor::setDirectKeyHex(
 
     for (size_t i = 0; i < 64; i += 2) {
         k[i/2] = static_cast<uint8_t>(
-        std::stoul(hexKey.substr(i, 2), nullptr, 16));
+        std::stoul(hexKey.substr(i, 2),
+        nullptr, 16));
         }
         directKey = k;useDirectKey = true;keyManager = nullptr;
         return true;
@@ -118,34 +119,51 @@ bool UnitEncryptor::isPhysicalDevice(
 }
 
 // contiene al sistema operativo usando lsblk.
-bool UnitEncryptor::isSystemDisk(
-    const std::string& path) {
-        std::string cmd =
-         "lsblk -rno MOUNTPOINTS "
-         + path + 
-         " 2>/dev/null";FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) 
-        return true;
+bool UnitEncryptor::isSystemDisk(const std::string& path) {
+    int pipefd[2];
+    if (pipe(pipefd) == -1) return true; // Fail-safe
 
+    pid_t pid = fork();
+    if (pid == -1) {
+        close(pipefd[0]); close(pipefd[1]);
+        return true; // Fail-safe
+    }
+
+    if (pid == 0) {
+        // Proceso hijo
+        close(pipefd[0]);
+        dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[1]);
+
+        // Usamos ruta absoluta para evitar PATH hijacking
+        const char* lsblk_path = "/usr/bin/lsblk";
+        if (access(lsblk_path, X_OK) != 0) lsblk_path = "/bin/lsblk";
+
+        execl(lsblk_path, "lsblk", "-rno", "MOUNTPOINTS", path.c_str(), nullptr);
+        _exit(127); // Si execl falla
+    }
+
+    // Proceso padre
+    close(pipefd[1]);
     char buffer[256];
     bool is_system = false;
-    
-    while (fgets(buffer,
-    sizeof(buffer), pipe) != nullptr) {
-        std::string mnt(buffer);
-            mnt.erase(
-            mnt.find_last_not_of(" \n\r\t") + 1);
-    if (mnt == "/" ||
-         mnt == "/boot" ||
-          mnt == "/boot/efi" ||
-          mnt == "[SWAP]") {
-        is_system = true; break;
+    ssize_t n;
+
+    while ((n = read(pipefd[0], buffer, sizeof(buffer) - 1)) > 0) {
+        buffer[n] = '\0';
+        std::string output(buffer);
+        if (output.find("/\n") != std::string::npos ||
+            output.find("/boot") != std::string::npos ||
+            output.find("[SWAP]") != std::string::npos) {
+            is_system = true;
+            break;
         }
     }
-    pclose(pipe);
-        return is_system;
-}
 
+    close(pipefd[0]);
+    waitpid(pid, nullptr, 0);
+    return is_system;
+}
 FSInfo UnitEncryptor::getFSInfo(
     const std::string& path) {
     FSInfo info;
@@ -588,28 +606,33 @@ bool UnitEncryptor::restoreHeader(
 int UnitEncryptor::safeExec(
     const std::vector<std::string>& args,
     bool need_sudo) {
-    if (args.empty()) 
-        return -1;
+    if (args.empty()) return -1;
+
     pid_t pid = fork();
-    if (pid == -1)
-        return -1;
+    if (pid == -1) return -1;
+
     if (pid == 0) {
+        // Sanitizar el PATH para evitar ejecución de binarios maliciosos en directorios locales
+        setenv("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", 1);
+
         std::vector<char*> c_args;
-    if (need_sudo && geteuid() != 0)
-       {c_args.push_back(const_cast<char*>("sudo"));}
-    for (
-        const auto& arg : args)
-         c_args.push_back(
-        const_cast<char*>(arg.c_str()));
-         c_args.push_back(nullptr);execvp(
-            c_args[0],
-            c_args.data());_exit(127);
+        if (need_sudo && geteuid() != 0) {
+            c_args.push_back(const_cast<char*>("sudo"));
+            c_args.push_back(const_cast<char*>("-n")); // -n para que no pida contraseña interactivamente
+        }
+        for (const auto& arg : args) {
+            c_args.push_back(const_cast<char*>(arg.c_str()));
+        }
+        c_args.push_back(nullptr);
+
+        execvp(c_args[0], c_args.data());
+        _exit(127);
     }
+
     int status;
     waitpid(pid, &status, 0);
     return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
-
 bool UnitEncryptor::mountDevice(
     const StorUnit& u,
     const std::string& point) {
@@ -621,11 +644,14 @@ bool UnitEncryptor::mountDevice(
     if (fs.empty() 
     && strlen(u.fs_info.fstype) > 0)
     fs = u.getSafeFSType();
-    
     int ret = fs.empty() ? safeExec(
-        {"mount", u.device_path, point},
+
+        {"mount", 
+            u.device_path, point},
          true) : safeExec(
-        {"mount", "-t", fs, u.device_path, point},
+
+        {"mount", "-t", fs, 
+            u.device_path, point},
          true);
     
     if (ret == 0) {
@@ -642,7 +668,8 @@ bool UnitEncryptor::unmountDevice(StorUnit& u) {
         return true;
     log(LogLevel::Info,
         LogEvent::Unmounting,
-            u.mount_point);safeExec({"umount", "-l",
+            u.mount_point);safeExec(
+        {"umount", "-l",
             u.mount_point}, true);
         std::ifstream mounts("/proc/mounts");
         std::string line;
@@ -693,44 +720,47 @@ bool UnitEncryptor::executeElevatedOp(
     const StorUnit& unit,
     bool encrypt,
     const Botan::secure_vector<uint8_t>& master_key) {
-    if (master_key.empty() ||master_key.size() != 32) 
+    
+    if (master_key.empty() || master_key.size() != 32) 
         return false;
 
     char keyfile[] = "/dev/shm/.rubic_key_XXXXXX";
     int kfd = mkstemp(keyfile);
     if (kfd < 0) 
-        return false;fchmod(kfd, 0600);
-    bool write_ok = (
-        write(kfd,
+        return false;
+
+    fchmod(kfd, 0600);
+    bool write_ok = (write(kfd, 
             master_key.data(),
             master_key.size()) == (ssize_t)
             master_key.size());
-            fsync(kfd);
-            close(kfd);
+    fsync(kfd);
+    close(kfd);
 
-    if (!write_ok) { unlink(keyfile); 
-        return false; }
-
-    char exe[PATH_MAX];
-    ssize_t n = readlink("/proc/self/exe", exe,
-    sizeof(exe) - 1);
-
-    if (n <= 0) { unlink(keyfile); 
-        return false; }
-        exe[n] = '\0';
+    if (!write_ok) { 
+        unlink(keyfile); 
+        return false; 
+    }
 
     const char* env_lang = getenv("LANG");
     std::string cur_lang = env_lang ? env_lang : "en";
 
     pid_t pid = fork();
-    if (pid < 0) { unlink(keyfile); 
-        return false; }
+    if (pid < 0) { unlink(keyfile); return false; }
+
     if (pid == 0) {
         setenv("LANG", cur_lang.c_str(), 1);
-        execlp("sudo","sudo", exe, "--unit-op",
-        unit.device_path.c_str(),
-          encrypt ? "encrypt" : "decrypt","--keyfile",
-          keyfile, nullptr); _exit(127);
+        
+        // Ruta absoluta a sudo
+        const char* sudo_path = "/usr/bin/sudo";
+        if (access(sudo_path, X_OK) != 0) sudo_path = "/bin/sudo";
+
+        // Usamos /proc/self/exe. ¡Esto elimina el TOCTOU!
+        execl(sudo_path, "sudo", "/proc/self/exe", "--unit-op",
+              unit.device_path.c_str(),
+              encrypt ? "encrypt" : "decrypt",
+              "--keyfile", keyfile, nullptr);
+        _exit(127);
     }
 
     int status = 0;
@@ -739,7 +769,7 @@ bool UnitEncryptor::executeElevatedOp(
 
     if (!WIFEXITED(status))
         return false;
-        return WEXITSTATUS(status) == 0;
+    return WEXITSTATUS(status) == 0;
 }
 
 /*menejo del sistemas con el sudo ya que 
