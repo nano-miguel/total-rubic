@@ -4,12 +4,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <filesystem>
 #include <fstream>
 #include <span>
 #include <algorithm>
-
 
 // HELPERS (I/O y Entorno aislados)
 namespace {
@@ -23,17 +23,18 @@ namespace {
         
         std::streamsize size = file.tellg();
         if (size <= 0) 
-            return false;out.resize(
+            return false;
 
+        out.resize(
             static_cast<size_t>(size));
             file.seekg(0, std::ios::beg);
 
             return file.read(
-
             reinterpret_cast<char*>(
             out.data()), size).good();
     }
-        bool write_file_bytes(
+
+    bool write_file_bytes(
         const std::string& path,
         const Botan::secure_vector<uint8_t>& data) {
         
@@ -54,7 +55,6 @@ namespace {
         return true;
     }
 
-
     //purea mierda
     std::string get_backup_dir() {
         const char* xdg = getenv("XDG_DATA_HOME");
@@ -64,10 +64,10 @@ namespace {
         const char* home = getenv("HOME");
         if (home && home[0])
             return std::string(home) + "/.local/share/RUBIC-A/backups";
-            return "/tmp/RUBIC-A/backups";  }
-}          
+            return "/tmp/RUBIC-A/backups";  
+    }
+} // Cierre del namespace
        
-
 //  derivamo la clave de key
  Botan::secure_vector<uint8_t> KeyDeriv::deriveSubKey(
     const Botan::secure_vector<uint8_t>& master_key,
@@ -113,7 +113,6 @@ namespace {
         return {}; }
 }
 
-
 /*flojo de kmac*/
  KMACProc::KMACProc(
     const Botan::secure_vector<uint8_t>& key_data) {
@@ -125,7 +124,11 @@ namespace {
     if (!Kmac) 
             Kmac = Botan::MessageAuthenticationCode::create("HMAC(SHA-512)");
     }
-    if (!Kmac) Kmac->set_key(key);
+    // FIX CRITICO: Si Kmac es nulo, explotamos. Si no, le seteamos la clave.
+    if (!Kmac) {
+        throw std::runtime_error("No se pudo crear el MAC criptográfico"); 
+    }
+    Kmac->set_key(key);
 }
 
 Botan::secure_vector<uint8_t> KMACProc::calculate(
@@ -138,16 +141,17 @@ bool KMACProc::verify(
     const uint8_t* expected_Kmac, size_t Kmac_size) {
     auto calc = calculate(data, size);
     if (calc.size() != Kmac_size)
-    return false; volatile uint8_t diff = 0;
+    return false; 
+    
+    volatile uint8_t diff = 0;
     for (size_t i = 0; i < Kmac_size; i++) diff |= (calc[i] ^ expected_Kmac[i]);
     return diff == 0;
 }
 
-
 /*respaldo de clave*/
 std::string HdrBackup::getBackupPath(
     const std::string& device_path) {
-    std::string devname = device_path;
+        std::string devname = device_path;
     if (devname.find("/dev/") == 0) devname = devname.substr(5);
     std::replace(
         devname.begin(),
@@ -232,7 +236,7 @@ Botan::secure_vector<uint8_t> HdrBackup::encryptBackup(
 }
 
 bool HdrBackup::decryptBackup(
-    const std::string& backup_path, EncUnitHdr& header,
+    const std::string& backup_path,EncUnitHdr& header,
     const Botan::secure_vector<uint8_t>& key) {
     Botan::secure_vector<uint8_t> enc;
     if (!read_file_bytes(backup_path, enc)) 
@@ -248,7 +252,8 @@ bool HdrBackup::decryptBackup(
             enc.begin() + 12,
             enc.end());
 
-        auto cipher = Botan::Cipher_Mode::create("AES-256/GCM",
+        auto cipher = 
+        Botan::Cipher_Mode::create("AES-256/GCM",
         Botan::Cipher_Dir::Decryption);
         if (!cipher) 
         return false;
@@ -281,7 +286,7 @@ bool HdrBackup::saveHeader(
 }
 
 bool HdrBackup::loadHeader(
-    const std::string& device_path, EncUnitHdr& header,
+    const std::string& device_path,EncUnitHdr& header,
     const Botan::secure_vector<uint8_t>& master_key) {
     auto bk = deriveBackupKey(device_path, master_key);
     if (bk.empty()) 
@@ -304,4 +309,111 @@ bool HdrBackup::removeBackup(
 
     return unlink(
         getBackupPath(device_path).c_str()) == 0;
+}
+
+// ==========================================
+// CONTROL FISICO DE LA CABECERA (Movido de unit_encryptor.cpp)
+// ==========================================
+
+bool UnitEncryptor::isUnitEncrypt(
+    const std::string& device_path) {
+    int fd = open(device_path.c_str(), O_RDONLY);
+    if (fd < 0) 
+        return false;
+        
+    EncUnitHdr hdr;
+    bool ok = read_enc_header(fd, hdr);
+    close(fd);
+        return ok;
+}
+
+bool UnitEncryptor::readHdr(
+int fd, EncUnitHdr& hdr) {
+        return read_enc_header(fd, hdr);
+}
+
+bool UnitEncryptor::writeHdr(
+int fd,
+    const EncUnitHdr& hdr) {
+    ssize_t w = -1;
+    {
+        DirectIOGuard guard(fd);
+    if (!guard.valid()) 
+        return false;
+        w = pwrite(fd, &hdr,sizeof(hdr),
+        HEADER_OFFSET_SECTORS * SECTOR_SIZE);
+    }
+    if (w != sizeof(hdr))
+        return false;
+    if (fsync(fd) != 0) 
+        return false;
+        return true;
+}
+
+bool UnitEncryptor::cleanHeader(
+    const StorUnit& unit) {
+        log(LogLevel::Info,
+            LogEvent::CleanupHeader,unit.device_path);
+    int fd = open(unit.device_path.c_str(), O_RDWR | O_SYNC);
+
+    if (fd < 0) { 
+        log(LogLevel::Error,
+             LogEvent::DeviceOpenFailed,strerror(errno));
+        return false; }
+
+    size_t hsz = HEADER_SECTORS * SECTOR_SIZE;
+        std::vector<uint8_t> zeros(hsz, 0);
+    bool ok = safe_pwrite(fd, zeros.data(), hsz, HEADER_OFFSET_SECTORS * SECTOR_SIZE);
+
+    if (ok) 
+        {if (fsync(fd) != 0) ok = false;}
+    close(fd);
+
+    if (!ok) { 
+    log(LogLevel::Error,
+         LogEvent::HeaderCleanFailed, "");
+        return false; }
+    log(LogLevel::Success,
+         LogEvent::HeaderRemoved, "");
+
+    if (backup_mgr.backupExists(unit.device_path)
+     && backup_mgr.removeBackup(unit.device_path))
+
+    log(LogLevel::Success,
+         LogEvent::BackupRemoved, "");
+        return true;
+}
+
+bool UnitEncryptor::restoreHeader(
+    const StorUnit& unit,
+    const Botan::secure_vector<uint8_t>& master_key) {
+    log(LogLevel::Info,
+         LogEvent::HeaderRestoring, ""); EncUnitHdr hdr;
+
+    if (!backup_mgr.loadHeader(
+        unit.device_path, hdr, master_key)) {
+    log(LogLevel::Error,
+         LogEvent::BackupLoadFailed, "");
+        return false;
+    }
+    int fd = open(
+        unit.device_path.c_str(), O_RDWR | O_SYNC);
+
+    if (fd < 0) {
+    log(LogLevel::Error,
+         LogEvent::DeviceOpenFailed, strerror(errno)); 
+        return false;
+    }
+    
+    if (!writeHdr(fd, hdr)) {
+    log(LogLevel::Error,
+         LogEvent::HeaderRestoreFailed, "");
+    close(fd);
+        return false;
+    }
+
+    close(fd);
+    log(LogLevel::Success,
+         LogEvent::HeaderRestored, "");
+        return true;
 }
