@@ -49,7 +49,6 @@ Botan::secure_vector<uint8_t> HeaderKMAC::calculate(
 bool HeaderKMAC::verify(
     const uint8_t* data, size_t len,
      const uint8_t* mac_tag, size_t mac_len) {
-
     auto calculated = calculate(data, len);
     if (calculated.size() != mac_len)
     return false;
@@ -105,7 +104,6 @@ bool AES256GCM::write_full_with_retry(
     int fd, const void* data,
      size_t size,
       int max_retries) {
-
     const uint8_t* ptr = static_cast<const uint8_t*>(data);
     size_t remaining = size;
     int retries = 0;
@@ -134,7 +132,6 @@ bool AES256GCM::read_full_with_retry(
     uint8_t* ptr = static_cast<uint8_t*>(data);
     size_t remaining = size;
     int retries = 0;
-
     while (remaining > 0) {
         ssize_t read_bytes = read(fd, ptr, remaining);
     if (read_bytes <= 0) {
@@ -263,7 +260,6 @@ bool AES256GCM::decrypt_with_mmap(
 
     const uint8_t* data = static_cast<const uint8_t*>(mapped.get());
     size_t total_size = mapped.get_size();
-
     if (!validate_header_integrity(data, total_size))
         return false;
 
