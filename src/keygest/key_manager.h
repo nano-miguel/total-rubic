@@ -129,7 +129,6 @@ struct KeyInfo {
 // CLASE PRINCIPAL DEL GESTOR DE CLAVES
 
 class KeyManager {
-
 public:
     using LogCallback = std::function<void(
         key_log::LogLevel level,
