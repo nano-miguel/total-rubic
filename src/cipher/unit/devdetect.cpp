@@ -53,7 +53,6 @@ bool DevDetect::checkUSB(
     std::string line;
 
     while (std::getline(uevent_file, line)) {
-
         auto it = std::search(line.begin(), line.end(), "usb", "usb" + 3,
         [](char c1, char c2){ 
         return std::toupper(c1) == std::toupper(c2); });  
