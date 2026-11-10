@@ -127,7 +127,6 @@ Botan::secure_vector<uint8_t> KeyCryptoUtils::decryptData(
     const Botan::secure_vector<uint8_t>& password) {
 
     try {
-        
     if (encrypted.size() < SALT_SIZE + IV_SIZE){
         return Botan::secure_vector<uint8_t>();}
 
