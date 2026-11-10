@@ -426,6 +426,7 @@ private:
     std::condition_variable not_empty;
     size_t max_size;
     bool closed = false;
+
 public:
     LimQueue(size_t max) : max_size(max) {}
     void push(T&& item) {
