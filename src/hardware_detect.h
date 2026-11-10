@@ -48,7 +48,6 @@ public:
     for (const auto& f : features) {
     if (f.supported) ss << " | " << f.name << ": ✓";
             }
-            
         } 
     else {
         ss << "Nucleos: "   << getCoreCount();
