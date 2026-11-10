@@ -37,7 +37,6 @@ namespace {
     bool write_file_bytes(
         const std::string& path,
         const Botan::secure_vector<uint8_t>& data) {
-        
         std::ofstream file(path, std::ios::binary);
         if (!file.is_open()) 
             return false;
