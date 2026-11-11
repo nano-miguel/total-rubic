@@ -27,6 +27,7 @@
 #include <mutex>
 #include <random>
 #include <pwd.h>
+#include <stdexcept>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -90,7 +91,7 @@ template <typename T> inline void secure_clear(T& container) {
 }
 } // namespace SecUtil
 
-// ▼▼▼ NUEVO: eventos estructurados del share ▼▼▼
+// ▼▼▼ EVENTOS ESTRUCTURADOS DEL SHARE ▼▼▼
 namespace share_log {
 
 enum class LogLevel {
@@ -150,7 +151,9 @@ inline std::string getHome() {
     struct passwd* pw = getpwuid(getuid());
     if (pw)
         return std::string(pw->pw_dir);
-    return "/tmp";
+        
+    // Eliminamos el fallback a /tmp por seguridad (CWE-362)
+    throw std::runtime_error("err_no_home_dir");
 }
 
 inline std::string getDlFolder() {
