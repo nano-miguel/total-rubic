@@ -78,8 +78,18 @@ class UserPermissions {
         uid_t uid = sudo_uid ? static_cast<uid_t>(std::stoul(sudo_uid)) : getuid();
         const char* sudo_gid = getenv("SUDO_GID");
         gid_t gid = sudo_gid ? static_cast<gid_t>(std::stoul(sudo_gid)) : getgid();
-        if (chown(path.c_str(), uid, gid) == -1) {}
-        chmod(path.c_str(), S_IRUSR | S_IWUSR);
+
+        // Abrimos con O_NOFOLLOW para evitar enlaces simbólicos y O_RDONLY porque solo cambiaremos metadatos
+        int fd = open(path.c_str(), O_RDONLY | O_NOFOLLOW);
+        if (fd < 0) return;
+
+        // Usamos fchown y fchmod sobre el descriptor: cero TOCTOU
+        if (fchown(fd, uid, gid) == -1) {
+            // Manejar error silenciosamente si es necesario
+        }
+        fchmod(fd, S_IRUSR | S_IWUSR);
+        
+        close(fd);
     }
 };
 
@@ -272,7 +282,7 @@ template <typename T> class WorkQueue {
     void push(T item) {
         std::unique_lock<std::mutex> lock(mutex);
         not_full.wait(lock, [this]() { return queue.size() < max_size || stopped; });
-      if (stopped) return;
+        if (stopped) return;
         queue.push_back(std::move(item));
         queue_size++;
         not_empty.notify_one();
@@ -280,7 +290,7 @@ template <typename T> class WorkQueue {
     bool pop(T& item) {
         std::unique_lock<std::mutex> lock(mutex);
         not_empty.wait(lock, [this]() { return !queue.empty() || stopped; });
-      if (stopped && queue.empty()) return false;
+        if (stopped && queue.empty()) return false;
         item = std::move(queue.front());
         queue.pop_front();
         queue_size--;
@@ -432,27 +442,20 @@ class AES256GCM {
     bool write_full_with_retry(int fd, const void* data, size_t size, int max_retries = 3);
     bool read_full_with_retry(int fd, void* data, size_t size, int max_retries = 3);
     bool validate_header_integrity(const uint8_t* data, size_t size);
+    bool encrypt_with_mmap(const MMapRAII& mapped, const std::string& outputPath);
+    bool decrypt_with_mmap(const MMapRAII& mapped, const std::string& outputPath);
     
-    bool encrypt_with_mmap(
-      const MMapRAII& mapped,
-       const std::string& outputPath);
-    bool decrypt_with_mmap(
-      const MMapRAII& mapped, 
-      const std::string& outputPath);
-    bool process_with_traditional_io(
-      const std::string& inputPath, 
-      const std::string& outputPath, bool encryptMode);
-    bool process_with_mmap_wrapper(
-      const std::string& inputPath, 
-      const std::string& outputPath, bool encryptMode);
-    bool process_single_file_with_retry(
-      const std::string& inputPath, 
-      const std::string& outputPath, bool encryptMode);
+    // NUEVAS FUNCIONES PARA BAJAR LA COMPLEJIDAD (Separadas de process_with_traditional_io)
+    bool encrypt_with_traditional_io(const std::string& inputPath, const std::string& outputPath);
+    bool decrypt_with_traditional_io(const std::string& inputPath, const std::string& outputPath);
+    
+    bool process_with_traditional_io(const std::string& inputPath, const std::string& outputPath, bool encryptMode);
+    bool process_with_mmap_wrapper(const std::string& inputPath, const std::string& outputPath, bool encryptMode);
+    bool process_single_file_with_retry(const std::string& inputPath, const std::string& outputPath, bool encryptMode);
     void file_worker_function();
   
     public:
-    AES256GCM(
-      const uint8_t* key_data, size_t key_len, size_t num_threads, size_t queue_sz, const SystemConfig& cfg);
+    AES256GCM(const uint8_t* key_data, size_t key_len, size_t num_threads, size_t queue_sz, const SystemConfig& cfg);
     ~AES256GCM();
     void setRateLimits(size_t max_files, size_t max_bytes);
     bool encrypt_file(const std::string& inputPath, const std::string& outputPath);
@@ -532,4 +535,4 @@ class UniversalCipher {
     uint64_t getMmapUsed() const;
 };
 
-#endif // CIPHER_UNIVERSAL_CIPHER_H
+#endif // CIPHER_UNIVERSAL_CIPHER_HER_UNIVERSAL_CIPHER_H
