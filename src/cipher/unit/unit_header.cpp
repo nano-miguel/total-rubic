@@ -10,6 +10,7 @@
 #include <fstream>
 #include <span>
 #include <algorithm>
+#include <stdexcept>
 
 // HELPERS (I/O y Entorno aislados)
 namespace {
@@ -37,6 +38,7 @@ namespace {
     bool write_file_bytes(
         const std::string& path,
         const Botan::secure_vector<uint8_t>& data) {
+        
         std::ofstream file(path, std::ios::binary);
         if (!file.is_open()) 
             return false;
@@ -63,7 +65,9 @@ namespace {
         const char* home = getenv("HOME");
         if (home && home[0])
             return std::string(home) + "/.local/share/RUBIC-A/backups";
-            return "/tmp/RUBIC-A/backups";  
+            
+        // En lugar de usar /tmp (inseguro), lanzamos error.
+        throw std::runtime_error("err_no_safe_backup_dir");
     }
 } // Cierre del namespace
        
