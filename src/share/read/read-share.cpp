@@ -10,7 +10,7 @@
 #include <arpa/inet.h>
 
 // ******************************************
-// FUNCIONES HELPER (Red y Conversión)
+// HELPERS DE CONVERSIÓN
 
 std::vector<uint8_t> ShareManager::toVec(const Botan::secure_vector<uint8_t>& sec) {
     return std::vector<uint8_t>(sec.begin(), sec.end());
@@ -19,6 +19,9 @@ std::vector<uint8_t> ShareManager::toVec(const Botan::secure_vector<uint8_t>& se
 Botan::secure_vector<uint8_t> ShareManager::toSec(const std::vector<uint8_t>& vec) {
     return Botan::secure_vector<uint8_t>(vec.begin(), vec.end());
 }
+
+// ******************************************
+// HELPERS DE RED
 
 bool ShareManager::safeSend(int sock, const void* buf, size_t len) {
     const char* ptr = static_cast<const char*>(buf);
@@ -115,7 +118,7 @@ std::vector<std::string> ShareManager::expandFiles(const std::string& path) {
 }
 
 // ********************************
-// IP ACTUAL
+// IP Y CONFIGURACIÓN
 
 std::string ShareManager::getCurrentIP() {
     std::string ip = "127.0.0.1";
@@ -139,9 +142,6 @@ std::string ShareManager::getCurrentIP() {
     return ip;
 }
 
-// *****************************************
-// IDENTIDAD / CONFIGURACIÓN
-
 void ShareManager::loadTrust() {
     trust_fprints.clear();
     std::ifstream file(cfg_dir + "/trusted_hosts.txt");
@@ -162,7 +162,6 @@ void ShareManager::saveTrust() {
 void ShareManager::setUsername(const std::string& name) {
     username = name;
 
-    // Usar XDG_CONFIG_HOME para la configuración del usuario
     const char* xdg_config = getenv("XDG_CONFIG_HOME");
     std::string config_base;
     if (xdg_config && xdg_config[0] != '\0') {
@@ -172,7 +171,6 @@ void ShareManager::setUsername(const std::string& name) {
         if (home && home[0] != '\0') {
             config_base = std::string(home) + "/.config";
         } else {
-            // Eliminamos el fallback inseguro a /tmp
             throw std::runtime_error("err_no_safe_config_dir");
         }
     }
