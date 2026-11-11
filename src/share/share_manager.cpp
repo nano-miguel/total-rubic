@@ -1,30 +1,9 @@
 // share/share_manager.cpp - 0.1 alpha
-// Implementación de la lógica pura de compartir archivos.
-// La UI vive en ui/share_manager_ui.h
-// NOTA: La lógica del servidor vive en share_server.cpp
-
 #include "share_manager.h"
 #include <stdexcept>
 
 // ******************************************
-// FUNCIONES HELPER & TOFU
-
-void ShareManager::loadTrust() {
-    trust_fprints.clear();
-    std::ifstream file(cfg_dir + "/trusted_hosts.txt");
-    std::string line;
-    while (std::getline(file, line)) {
-        if (!line.empty())
-            trust_fprints.insert(line);
-    }
-}
-
-void ShareManager::saveTrust() {
-    std::ofstream file(cfg_dir + "/trusted_hosts.txt");
-    for (const auto& fp : trust_fprints) {
-        file << fp << "\n";
-    }
-}
+// TOFU (Trust)
 
 bool ShareManager::checkTrust(const std::string& rem_user, const std::string& fprint, bool is_srv) {
     if (fprint.empty())
@@ -32,7 +11,6 @@ bool ShareManager::checkTrust(const std::string& rem_user, const std::string& fp
     if (trust_fprints.count(fprint))
         return true;
 
-    // Delegar a la UI (que preguntará al usuario)
     if (!trust_prompt_cb_)
         return false;
 
@@ -49,62 +27,6 @@ bool ShareManager::checkTrust(const std::string& rem_user, const std::string& fp
     return false;
 }
 
-std::vector<uint8_t> ShareManager::toVec(const Botan::secure_vector<uint8_t>& sec) {
-    return std::vector<uint8_t>(sec.begin(), sec.end());
-}
-
-Botan::secure_vector<uint8_t> ShareManager::toSec(const std::vector<uint8_t>& vec) {
-    return Botan::secure_vector<uint8_t>(vec.begin(), vec.end());
-}
-
-bool ShareManager::safeSend(int sock, const void* buf, size_t len) {
-    const char* ptr = static_cast<const char*>(buf);
-    size_t total = 0;
-    while (total < len) {
-        ssize_t sent = send(sock, ptr + total, len - total, MSG_NOSIGNAL);
-        if (sent <= 0)
-            return false;
-        total += sent;
-    }
-    return true;
-}
-
-bool ShareManager::safeRecv(int sock, void* buf, size_t len) {
-    char* ptr = static_cast<char*>(buf);
-    size_t total = 0;
-    while (total < len) {
-        ssize_t recvd = recv(sock, ptr + total, len - total, 0);
-        if (recvd <= 0)
-            return false;
-        total += recvd;
-    }
-    return true;
-}
-
-void ShareManager::setSockTimeout(int sock, int secs) {
-    struct timeval tv;
-    tv.tv_sec = secs;
-    tv.tv_usec = 0;
-    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-}
-
-void ShareManager::setSockAlive(int sock) {
-    int alive = 1;
-    setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &alive, sizeof(alive));
-}
-
-bool ShareManager::checkRate(int cli_sock, const std::string& cli_ip) {
-    if (act_conns.load() >= MAX_CONNS)
-        return false;
-    std::lock_guard<std::mutex> r_lock(rate_mtx);
-    time_t now = time(nullptr);
-    if (now - conn_attempts[cli_ip] < RATE_LIMIT)
-        return false;
-    conn_attempts[cli_ip] = now;
-    return true;
-}
-
 // *************************************************
 // Cifrado y generacion de llaves
 
@@ -116,22 +38,6 @@ bool ShareManager::genKyber() {
         return true;
     } catch (...) {
         return false;
-    }
-}
-
-std::string ShareManager::hashFile(const std::string& path) {
-    try {
-        auto hash = Botan::HashFunction::create_or_throw("SHA-256");
-        std::ifstream file(path, std::ios::binary);
-        if (!file)
-            return "";
-        std::vector<char> buf(8192);
-        while (file.read(buf.data(), buf.size()) || file.gcount() > 0) {
-            hash->update(reinterpret_cast<const uint8_t*>(buf.data()), file.gcount());
-        }
-        return Botan::hex_encode(hash->final());
-    } catch (...) {
-        return "";
     }
 }
 
@@ -181,81 +87,23 @@ std::vector<uint8_t> ShareManager::decChunk(const std::vector<uint8_t>& data, co
     }
 }
 
-// **********************************************
-// ARCHIVOS
-
-size_t ShareManager::getFileSz(const std::string& path) {
-    struct stat st;
-    if (stat(path.c_str(), &st) == 0)
-        return st.st_size;
-    return 0;
-}
-
-std::vector<std::string> ShareManager::expandFiles(const std::string& path) {
-    std::vector<std::string> files;
-    if (!std::filesystem::exists(path))
-        return files;
-
-    if (std::filesystem::is_regular_file(path)) {
-        files.push_back(path);
-    } else if (std::filesystem::is_directory(path)) {
-        try {
-            for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
-                if (std::filesystem::is_regular_file(entry.path())) {
-                    files.push_back(entry.path().string());
-                }
-            }
-        } catch (...) {
-        }
-    }
-    return files;
-}
-
 // ********************************
-// IP ACTUAL & PARSEO
-
-std::string ShareManager::getCurrentIP() {
-    std::string ip = "127.0.0.1";
-    struct ifaddrs *ifaddr, *ifa;
-    char host[NI_MAXHOST];
-
-    if (getifaddrs(&ifaddr) == 0) {
-        for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-            if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET) {
-                getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST);
-                std::string ifname = ifa->ifa_name;
-                std::string ipaddr = host;
-                if (ipaddr != "127.0.0.1" && ifname.find("lo") == std::string::npos) {
-                    ip = ipaddr;
-                    break;
-                }
-            }
-        }
-        freeifaddrs(ifaddr);
-    }
-    return ip;
-}
+// PARSEO DE DIRECCIONES
 
 bool ShareManager::parseAddress(const std::string& input, std::string& addr, int& port) {
     std::string ad = input;
     ad.erase(std::remove(ad.begin(), ad.end(), ' '), ad.end());
 
-    if (ad.empty()) {
-        return false;
-    }
+    if (ad.empty()) return false;
 
     size_t colon = ad.find(':');
-    if (colon == std::string::npos) {
-        return false;
-    }
+    if (colon == std::string::npos) return false;
 
     addr = ad.substr(0, colon);
     std::string port_str = ad.substr(colon + 1);
 
     for (char c : port_str) {
-        if (!isdigit(c)) {
-            return false;
-        }
+        if (!isdigit(c)) return false;
     }
 
     try {
@@ -306,7 +154,6 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
             return false;
         }
 
-        // Intercambio de Identidad (Nombre y Huella de Dilithium)
         size_t len = username.size();
         safeSend(sock, &len, sizeof(len));
         safeSend(sock, username.c_str(), len);
@@ -335,13 +182,11 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
             rem_fprint = std::string(fp_buf.data());
         }
 
-        // TOFU
         if (!checkTrust(rem_user, rem_fprint, false)) {
             close(sock);
             return false;
         }
 
-        // Intercambio de Claves Dilithium
         if (!id_pub_key.empty()) {
             size_t dil_len = id_pub_key.size();
             safeSend(sock, &dil_len, sizeof(dil_len));
@@ -359,12 +204,10 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
                 try {
                     Botan::DataSource_Memory src(rem_dil_buf);
                     rem_dili_key = Botan::X509::load_key(src);
-                } catch (...) {
-                }
+                } catch (...) {}
             }
         }
 
-        // Envío de Clave Kyber y Firma Digital
         std::string kyber_pem = Botan::X509::PEM_encode(*kyber_pub_key);
         size_t kyber_len = kyber_pem.size();
         safeSend(sock, &kyber_len, sizeof(kyber_len));
@@ -383,7 +226,6 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
             safeSend(sock, &zero, sizeof(zero));
         }
 
-        // recepcion de claves Remota y verificar
         size_t rem_kyber_len;
         safeRecv(sock, &rem_kyber_len, sizeof(rem_kyber_len));
         if (rem_kyber_len == 0 || rem_kyber_len > 65536) {
@@ -421,7 +263,6 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
             return false;
         }
 
-        // encapsulación-kyber
         Botan::PK_KEM_Encryptor kem(*rem_kyber_key, "KDF2(SHA-256)");
         auto result = kem.encrypt(rng, 32);
 
@@ -458,8 +299,7 @@ bool ShareManager::sendFile(const std::string& path,
                             const std::vector<uint8_t>& key) {
     try {
         int sock = socket(AF_INET, SOCK_STREAM, 0);
-        if (sock < 0)
-            return false;
+        if (sock < 0) return false;
 
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
@@ -497,8 +337,7 @@ bool ShareManager::sendFile(const std::string& path,
         while (true) {
             file.read(buf.data(), CHUNK_SIZE);
             size_t read = file.gcount();
-            if (read == 0)
-                break;
+            if (read == 0) break;
 
             std::vector<uint8_t> data(buf.begin(), buf.begin() + read);
             std::vector<uint8_t> enc = encChunk(data, key);
@@ -530,7 +369,6 @@ bool ShareManager::sendFiles(const std::vector<std::string>& file_paths, const s
         return false;
     }
 
-    // Establecer sesión segura (KEM exchange + TOFU)
     std::string rem_user, rem_fprint;
     std::unique_ptr<Botan::Public_Key> rem_kyber_key, rem_dili_key;
     std::vector<uint8_t> sess_key;
@@ -542,7 +380,6 @@ bool ShareManager::sendFiles(const std::vector<std::string>& file_paths, const s
 
     log(share_log::LogLevel::Info, share_log::LogEvent::SendingFiles, std::to_string(file_paths.size()));
 
-    // Enviar archivos uno por uno
     size_t sent = 0;
     for (size_t i = 0; i < file_paths.size(); i++) {
         if (file_send_cb_)
@@ -550,8 +387,7 @@ bool ShareManager::sendFiles(const std::vector<std::string>& file_paths, const s
         bool ok = sendFile(file_paths[i], rem_addr, xfer_port, sess_key);
         if (file_send_cb_)
             file_send_cb_(file_paths[i], i + 1, file_paths.size(), ok);
-        if (ok)
-            sent++;
+        if (ok) sent++;
     }
 
     SecUtil::secure_clear(sess_key);
@@ -581,16 +417,13 @@ void ShareManager::stopSrvs() {
         close(xfer_sock);
     }
 
-    if (kem_thread.joinable())
-        kem_thread.join();
-    if (xfer_thread.joinable())
-        xfer_thread.join();
+    if (kem_thread.joinable()) kem_thread.join();
+    if (xfer_thread.joinable()) xfer_thread.join();
 
     {
         std::lock_guard<std::mutex> lock(th_mtx);
         for (auto& t : conn_threads) {
-            if (t.joinable())
-                t.join();
+            if (t.joinable()) t.join();
         }
         conn_threads.clear();
     }
@@ -615,32 +448,6 @@ ShareManager::~ShareManager() {
     SecUtil::secure_clear(id_priv_raw);
 }
 
-// *****************************************
-// IDENTIDAD
-
-void ShareManager::setUsername(const std::string& name) {
-    username = name;
-
-    // Usar XDG_CONFIG_HOME para la configuración del usuario
-    const char* xdg_config = getenv("XDG_CONFIG_HOME");
-    std::string config_base;
-    if (xdg_config && xdg_config[0] != '\0') {
-        config_base = std::string(xdg_config);
-    } else {
-        const char* home = getenv("HOME");
-        if (home && home[0] != '\0') {
-            config_base = std::string(home) + "/.config";
-        } else {
-            // Eliminamos el fallback inseguro a /tmp
-            throw std::runtime_error("err_no_safe_config_dir");
-        }
-    }
-
-    cfg_dir = config_base + "/RUBIC-A/" + name;
-    create_dir_recursive(cfg_dir);
-    loadTrust();
-}
-
 void ShareManager::setIdentity(const std::vector<uint8_t>& pub_key,
                                const std::vector<uint8_t>& priv_key,
                                const std::string& fp) {
@@ -662,9 +469,6 @@ void ShareManager::setIdentity(const std::vector<uint8_t>& pub_key,
     }
 }
 
-// *****************************************
-// TOFU / TRUST (interfaz pública)
-
 std::vector<std::string> ShareManager::getTrustedFingerprints() const {
     std::vector<std::string> result;
     for (const auto& fp : trust_fprints) {
@@ -674,8 +478,7 @@ std::vector<std::string> ShareManager::getTrustedFingerprints() const {
 }
 
 bool ShareManager::addTrustedFingerprint(const std::string& fprint) {
-    if (fprint.empty())
-        return false;
+    if (fprint.empty()) return false;
     trust_fprints.insert(fprint);
     saveTrust();
     return true;
@@ -683,8 +486,7 @@ bool ShareManager::addTrustedFingerprint(const std::string& fprint) {
 
 bool ShareManager::removeTrustedFingerprint(const std::string& fprint) {
     auto it = trust_fprints.find(fprint);
-    if (it == trust_fprints.end())
-        return false;
+    if (it == trust_fprints.end()) return false;
     trust_fprints.erase(it);
     saveTrust();
     return true;
@@ -694,9 +496,6 @@ bool ShareManager::isTrusted(const std::string& fprint) const {
     return trust_fprints.count(fprint) > 0;
 }
 
-// *****************************************
-// RECIBIR
-
 bool ShareManager::startReceiving() {
     if (!kyber_priv_key && !genKyber()) {
         log(share_log::LogLevel::Error, share_log::LogEvent::KyberGenFailed, "");
@@ -704,11 +503,9 @@ bool ShareManager::startReceiving() {
     }
 
     stop_req = false;
-
     kem_thread = std::thread([this]() { startKemSrv(); });
     xfer_thread = std::thread([this]() { startXferSrv(); });
 
-    // Esperar a que arranquen los servidores
     for (int i = 0; i < 20 && !kem_srv_run; i++) {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
