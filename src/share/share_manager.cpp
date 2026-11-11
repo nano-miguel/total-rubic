@@ -1,9 +1,30 @@
-// src/share/share_manager.cpp - 0.1 alpha
+// share/share_manager.cpp - 0.1 alpha
+// Implementación de la lógica pura de compartir archivos.
+// La UI vive en ui/share_manager_ui.h
+// NOTA: La lógica del servidor vive en share_server.cpp
+
 #include "share_manager.h"
+#include <stdexcept>
 
 // ******************************************
 // FUNCIONES HELPER & TOFU
-// ******************************************
+
+void ShareManager::loadTrust() {
+    trust_fprints.clear();
+    std::ifstream file(cfg_dir + "/trusted_hosts.txt");
+    std::string line;
+    while (std::getline(file, line)) {
+        if (!line.empty())
+            trust_fprints.insert(line);
+    }
+}
+
+void ShareManager::saveTrust() {
+    std::ofstream file(cfg_dir + "/trusted_hosts.txt");
+    for (const auto& fp : trust_fprints) {
+        file << fp << "\n";
+    }
+}
 
 bool ShareManager::checkTrust(const std::string& rem_user, const std::string& fprint, bool is_srv) {
     if (fprint.empty())
@@ -20,7 +41,7 @@ bool ShareManager::checkTrust(const std::string& rem_user, const std::string& fp
     bool accept = trust_prompt_cb_(rem_user, fprint, is_srv);
     if (accept) {
         trust_fprints.insert(fprint);
-        saveTrust(); // Llama a la función de read-share.cpp
+        saveTrust();
         log(share_log::LogLevel::Success, share_log::LogEvent::TrustAccepted, rem_user);
         return true;
     }
@@ -36,9 +57,56 @@ Botan::secure_vector<uint8_t> ShareManager::toSec(const std::vector<uint8_t>& ve
     return Botan::secure_vector<uint8_t>(vec.begin(), vec.end());
 }
 
+bool ShareManager::safeSend(int sock, const void* buf, size_t len) {
+    const char* ptr = static_cast<const char*>(buf);
+    size_t total = 0;
+    while (total < len) {
+        ssize_t sent = send(sock, ptr + total, len - total, MSG_NOSIGNAL);
+        if (sent <= 0)
+            return false;
+        total += sent;
+    }
+    return true;
+}
+
+bool ShareManager::safeRecv(int sock, void* buf, size_t len) {
+    char* ptr = static_cast<char*>(buf);
+    size_t total = 0;
+    while (total < len) {
+        ssize_t recvd = recv(sock, ptr + total, len - total, 0);
+        if (recvd <= 0)
+            return false;
+        total += recvd;
+    }
+    return true;
+}
+
+void ShareManager::setSockTimeout(int sock, int secs) {
+    struct timeval tv;
+    tv.tv_sec = secs;
+    tv.tv_usec = 0;
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+}
+
+void ShareManager::setSockAlive(int sock) {
+    int alive = 1;
+    setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &alive, sizeof(alive));
+}
+
+bool ShareManager::checkRate(int cli_sock, const std::string& cli_ip) {
+    if (act_conns.load() >= MAX_CONNS)
+        return false;
+    std::lock_guard<std::mutex> r_lock(rate_mtx);
+    time_t now = time(nullptr);
+    if (now - conn_attempts[cli_ip] < RATE_LIMIT)
+        return false;
+    conn_attempts[cli_ip] = now;
+    return true;
+}
+
 // *************************************************
 // Cifrado y generacion de llaves
-// *************************************************
 
 bool ShareManager::genKyber() {
     try {
@@ -48,6 +116,22 @@ bool ShareManager::genKyber() {
         return true;
     } catch (...) {
         return false;
+    }
+}
+
+std::string ShareManager::hashFile(const std::string& path) {
+    try {
+        auto hash = Botan::HashFunction::create_or_throw("SHA-256");
+        std::ifstream file(path, std::ios::binary);
+        if (!file)
+            return "";
+        std::vector<char> buf(8192);
+        while (file.read(buf.data(), buf.size()) || file.gcount() > 0) {
+            hash->update(reinterpret_cast<const uint8_t*>(buf.data()), file.gcount());
+        }
+        return Botan::hex_encode(hash->final());
+    } catch (...) {
+        return "";
     }
 }
 
@@ -97,9 +181,95 @@ std::vector<uint8_t> ShareManager::decChunk(const std::vector<uint8_t>& data, co
     }
 }
 
+// **********************************************
+// ARCHIVOS
+
+size_t ShareManager::getFileSz(const std::string& path) {
+    struct stat st;
+    if (stat(path.c_str(), &st) == 0)
+        return st.st_size;
+    return 0;
+}
+
+std::vector<std::string> ShareManager::expandFiles(const std::string& path) {
+    std::vector<std::string> files;
+    if (!std::filesystem::exists(path))
+        return files;
+
+    if (std::filesystem::is_regular_file(path)) {
+        files.push_back(path);
+    } else if (std::filesystem::is_directory(path)) {
+        try {
+            for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
+                if (std::filesystem::is_regular_file(entry.path())) {
+                    files.push_back(entry.path().string());
+                }
+            }
+        } catch (...) {
+        }
+    }
+    return files;
+}
+
+// ********************************
+// IP ACTUAL & PARSEO
+
+std::string ShareManager::getCurrentIP() {
+    std::string ip = "127.0.0.1";
+    struct ifaddrs *ifaddr, *ifa;
+    char host[NI_MAXHOST];
+
+    if (getifaddrs(&ifaddr) == 0) {
+        for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+            if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET) {
+                getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST);
+                std::string ifname = ifa->ifa_name;
+                std::string ipaddr = host;
+                if (ipaddr != "127.0.0.1" && ifname.find("lo") == std::string::npos) {
+                    ip = ipaddr;
+                    break;
+                }
+            }
+        }
+        freeifaddrs(ifaddr);
+    }
+    return ip;
+}
+
+bool ShareManager::parseAddress(const std::string& input, std::string& addr, int& port) {
+    std::string ad = input;
+    ad.erase(std::remove(ad.begin(), ad.end(), ' '), ad.end());
+
+    if (ad.empty()) {
+        return false;
+    }
+
+    size_t colon = ad.find(':');
+    if (colon == std::string::npos) {
+        return false;
+    }
+
+    addr = ad.substr(0, colon);
+    std::string port_str = ad.substr(colon + 1);
+
+    for (char c : port_str) {
+        if (!isdigit(c)) {
+            return false;
+        }
+    }
+
+    try {
+        long p = std::stol(port_str);
+        if (p < 1 || p > 65535) return false;
+        port = static_cast<int>(p);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
 // *****************************************
 // INTERCAMBIO DE CLAVES (Cliente)
-// *****************************************
 
 bool ShareManager::exchKeys(const std::string& rem_addr,
                             int rem_port,
@@ -281,7 +451,6 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
 
 // *****************************************
 // ENVIAR (Cliente)
-// *****************************************
 
 bool ShareManager::sendFile(const std::string& path,
                             const std::string& rem_addr,
@@ -307,7 +476,7 @@ bool ShareManager::sendFile(const std::string& path,
             return false;
         }
 
-        std::string file_hash = hashFile(path); // De read-share.cpp
+        std::string file_hash = hashFile(path);
         std::ifstream file(path, std::ios::binary | std::ios::ate);
         if (!file) {
             close(sock);
@@ -397,7 +566,6 @@ bool ShareManager::sendFiles(const std::vector<std::string>& file_paths, const s
 
 // *****************************************
 // CICLO DE VIDA & SERVIDOR
-// *****************************************
 
 void ShareManager::stopSrvs() {
     stop_req = true;
@@ -449,7 +617,6 @@ ShareManager::~ShareManager() {
 
 // *****************************************
 // IDENTIDAD
-// *****************************************
 
 void ShareManager::setUsername(const std::string& name) {
     username = name;
@@ -461,16 +628,17 @@ void ShareManager::setUsername(const std::string& name) {
         config_base = std::string(xdg_config);
     } else {
         const char* home = getenv("HOME");
-        if (home) {
+        if (home && home[0] != '\0') {
             config_base = std::string(home) + "/.config";
         } else {
-            config_base = "/tmp";
+            // Eliminamos el fallback inseguro a /tmp
+            throw std::runtime_error("err_no_safe_config_dir");
         }
     }
 
     cfg_dir = config_base + "/RUBIC-A/" + name;
     create_dir_recursive(cfg_dir);
-    loadTrust(); // De read-share.cpp
+    loadTrust();
 }
 
 void ShareManager::setIdentity(const std::vector<uint8_t>& pub_key,
@@ -496,7 +664,6 @@ void ShareManager::setIdentity(const std::vector<uint8_t>& pub_key,
 
 // *****************************************
 // TOFU / TRUST (interfaz pública)
-// *****************************************
 
 std::vector<std::string> ShareManager::getTrustedFingerprints() const {
     std::vector<std::string> result;
@@ -510,7 +677,7 @@ bool ShareManager::addTrustedFingerprint(const std::string& fprint) {
     if (fprint.empty())
         return false;
     trust_fprints.insert(fprint);
-    saveTrust(); // De read-share.cpp
+    saveTrust();
     return true;
 }
 
@@ -519,7 +686,7 @@ bool ShareManager::removeTrustedFingerprint(const std::string& fprint) {
     if (it == trust_fprints.end())
         return false;
     trust_fprints.erase(it);
-    saveTrust(); // De read-share.cpp
+    saveTrust();
     return true;
 }
 
@@ -529,7 +696,6 @@ bool ShareManager::isTrusted(const std::string& fprint) const {
 
 // *****************************************
 // RECIBIR
-// *****************************************
 
 bool ShareManager::startReceiving() {
     if (!kyber_priv_key && !genKyber()) {
