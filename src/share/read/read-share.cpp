@@ -1,34 +1,24 @@
 // src/share/read/read-share.cpp
 #include "../share_manager.h"
+#include <stdexcept>
 #include <fstream>
-#include <sys/socket.h>
-#include <ifaddrs.h>
+#include <filesystem>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <netdb.h>
+#include <ifaddrs.h>
+#include <arpa/inet.h>
 
 // ******************************************
-// PERSISTENCIA TOFU (Lectura/Escritura)
-// ******************************************
+// FUNCIONES HELPER (Red y Conversión)
 
-void ShareManager::loadTrust() {
-    trust_fprints.clear();
-    std::ifstream file(cfg_dir + "/trusted_hosts.txt");
-    std::string line;
-    while (std::getline(file, line)) {
-        if (!line.empty())
-            trust_fprints.insert(line);
-    }
+std::vector<uint8_t> ShareManager::toVec(const Botan::secure_vector<uint8_t>& sec) {
+    return std::vector<uint8_t>(sec.begin(), sec.end());
 }
 
-void ShareManager::saveTrust() {
-    std::ofstream file(cfg_dir + "/trusted_hosts.txt");
-    for (const auto& fp : trust_fprints) {
-        file << fp << "\n";
-    }
+Botan::secure_vector<uint8_t> ShareManager::toSec(const std::vector<uint8_t>& vec) {
+    return Botan::secure_vector<uint8_t>(vec.begin(), vec.end());
 }
-
-// ******************************************
-// RED Y SOCKETS
-// ******************************************
 
 bool ShareManager::safeSend(int sock, const void* buf, size_t len) {
     const char* ptr = static_cast<const char*>(buf);
@@ -68,7 +58,6 @@ void ShareManager::setSockAlive(int sock) {
 }
 
 bool ShareManager::checkRate(int cli_sock, const std::string& cli_ip) {
-    (void)cli_sock;
     if (act_conns.load() >= MAX_CONNS)
         return false;
     std::lock_guard<std::mutex> r_lock(rate_mtx);
@@ -79,31 +68,8 @@ bool ShareManager::checkRate(int cli_sock, const std::string& cli_ip) {
     return true;
 }
 
-std::string ShareManager::getCurrentIP() {
-    std::string ip = "127.0.0.1";
-    struct ifaddrs *ifaddr, *ifa;
-    char host[NI_MAXHOST];
-
-    if (getifaddrs(&ifaddr) == 0) {
-        for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-            if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET) {
-                getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST);
-                std::string ifname = ifa->ifa_name;
-                std::string ipaddr = host;
-                if (ipaddr != "127.0.0.1" && ifname.find("lo") == std::string::npos) {
-                    ip = ipaddr;
-                    break;
-                }
-            }
-        }
-        freeifaddrs(ifaddr);
-    }
-    return ip;
-}
-
-// ******************************************
-// MANEJO DE ARCHIVOS
-// ******************************************
+// **********************************************
+// ARCHIVOS Y HASH
 
 std::string ShareManager::hashFile(const std::string& path) {
     try {
@@ -148,36 +114,70 @@ std::vector<std::string> ShareManager::expandFiles(const std::string& path) {
     return files;
 }
 
-bool ShareManager::parseAddress(const std::string& input, std::string& addr, int& port) {
-    std::string ad = input;
-    ad.erase(std::remove(ad.begin(), ad.end(), ' '), ad.end());
+// ********************************
+// IP ACTUAL
 
-    if (ad.empty()) {
-        return false;
+std::string ShareManager::getCurrentIP() {
+    std::string ip = "127.0.0.1";
+    struct ifaddrs *ifaddr, *ifa;
+    char host[NI_MAXHOST];
+
+    if (getifaddrs(&ifaddr) == 0) {
+        for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+            if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET) {
+                getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST);
+                std::string ifname = ifa->ifa_name;
+                std::string ipaddr = host;
+                if (ipaddr != "127.0.0.1" && ifname.find("lo") == std::string::npos) {
+                    ip = ipaddr;
+                    break;
+                }
+            }
+        }
+        freeifaddrs(ifaddr);
     }
+    return ip;
+}
 
-    size_t colon = ad.find(':');
-    if (colon == std::string::npos) {
-        return false;
+// *****************************************
+// IDENTIDAD / CONFIGURACIÓN
+
+void ShareManager::loadTrust() {
+    trust_fprints.clear();
+    std::ifstream file(cfg_dir + "/trusted_hosts.txt");
+    std::string line;
+    while (std::getline(file, line)) {
+        if (!line.empty())
+            trust_fprints.insert(line);
     }
+}
 
-    addr = ad.substr(0, colon);
-    std::string port_str = ad.substr(colon + 1);
+void ShareManager::saveTrust() {
+    std::ofstream file(cfg_dir + "/trusted_hosts.txt");
+    for (const auto& fp : trust_fprints) {
+        file << fp << "\n";
+    }
+}
 
-    for (char c : port_str) {
-        if (!isdigit(c)) {
-            return false;
+void ShareManager::setUsername(const std::string& name) {
+    username = name;
+
+    // Usar XDG_CONFIG_HOME para la configuración del usuario
+    const char* xdg_config = getenv("XDG_CONFIG_HOME");
+    std::string config_base;
+    if (xdg_config && xdg_config[0] != '\0') {
+        config_base = std::string(xdg_config);
+    } else {
+        const char* home = getenv("HOME");
+        if (home && home[0] != '\0') {
+            config_base = std::string(home) + "/.config";
+        } else {
+            // Eliminamos el fallback inseguro a /tmp
+            throw std::runtime_error("err_no_safe_config_dir");
         }
     }
 
-    try {
-        port = std::stoi(port_str);
-    } catch (...) {
-        return false;
-    }
-
-    if (port < 1 || port > 65535) {
-        return false;
-    }
-    return true;
+    cfg_dir = config_base + "/RUBIC-A/" + name;
+    create_dir_recursive(cfg_dir);
+    loadTrust();
 }
