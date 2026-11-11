@@ -1,615 +1,538 @@
-// cipher/universal/universal_pipeline.cpp - 0.1 alpha
-// El motor de cifrado de archivos (AES256GCM, RateLimiter, HeaderKMAC).
+// cipher/universal_cipher.h - 0.1 alpha
+#ifndef CIPHER_UNIVERSAL_CIPHER_H
+#define CIPHER_UNIVERSAL_CIPHER_H
 
-#include "../universal_cipher.h"
-#include <botan/kdf.h>
-#include <span>
-#include <fcntl.h>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <chrono>
+#include <thread>
+#include <atomic>
+#include <queue>
+#include <mutex>
+#include <shared_mutex>
+#include <condition_variable>
+#include <future>
+#include <memory>
+#include <functional>
+#include <cstring>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <termios.h>
 #include <unistd.h>
+#include <pwd.h>
+#include <grp.h>
+#include <sys/mman.h>
+#include <random>
+#include <filesystem>
+#include <algorithm>
+#include <limits>
+#include <array>
+#include <map>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cctype>
+#include <ctime>
+#include <deque>
+#include <list>
+#include <fcntl.h>
+#include <errno.h>
+#include <csignal>
+#include <botan/auto_rng.h>
+#include <botan/secmem.h>
+#include <botan/hex.h>
+#include <botan/hash.h>
+#include <botan/aead.h>
+#include <botan/stream_cipher.h>
+#include <botan/cipher_mode.h>
+#include <botan/version.h>
+#include <botan/base64.h>
+#include <botan/system_rng.h>
+#include <botan/mac.h>
+#include <botan/pwdhash.h>
 
-// HeaderKMAC
-void HeaderKMAC::set_key(const Botan::secure_vector<uint8_t>& master_key) {
-    try {
-        auto kdf = Botan::KDF::create_or_throw("HKDF(SHA-256)");
-        std::string info_str = "HEADER_KMAC"; 
-        std::string salt_str = "RUBIC_SALT";
-        Botan::secure_vector<uint8_t> derived_key(32);
+#include "../hardware_detect.h"
+#include "universal/config/universal_settings.h" // <-- AQUÍ INCLUIMOS LA CONFIGURACIÓN
 
-        kdf->derive_key(
-            std::span<uint8_t>(derived_key.data(), derived_key.size()),
-            std::span<const uint8_t>(master_key.data(), master_key.size()),
-            std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(salt_str.data()), salt_str.size()),
-            std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(info_str.data()), info_str.size()));
+class KeyManager;
 
-        mac_key = derived_key;
-    } 
-    catch (const std::exception&) {
-        auto hash = Botan::HashFunction::create_or_throw("SHA-256");
-        hash->update(master_key);
-        hash->update("HEADER_KMAC_SECURE_V2");
-        mac_key = hash->final();
-    }
+namespace univ_log {
+enum class LogLevel { Info, Warning, Error, Success, Progress };
+enum class LogEvent {
+    PathInvalid, NoFilesFound, NoFilesToProcess, ProcessingSingle,
+    FileDone, FileError, FileMoveError, ScanError,
+    NoKeyManager, KeyNotFound, KeyNotActive, KeyValueError, KeyLengthError,
+    CountersError
+};
 }
 
-Botan::secure_vector<uint8_t> HeaderKMAC::calculate(const uint8_t* data, size_t len) {
-    std::unique_ptr<Botan::MessageAuthenticationCode> mac;
-    try {
-        mac = Botan::MessageAuthenticationCode::create_or_throw("KMAC-128(256)");
-    } 
-    catch (const std::exception&) {
-        mac = Botan::MessageAuthenticationCode::create_or_throw("HMAC(SHA-3(256))");
-    }
-    mac->set_key(mac_key);
-    mac->update(data, len);
-    return mac->final();
-}
+class UserPermissions {
+  public:
+    static void fixFilePermissions(const std::string& path) {
+        const char* sudo_uid = getenv("SUDO_UID");
+        uid_t uid = sudo_uid ? static_cast<uid_t>(std::stoul(sudo_uid)) : getuid();
+        const char* sudo_gid = getenv("SUDO_GID");
+        gid_t gid = sudo_gid ? static_cast<gid_t>(std::stoul(sudo_gid)) : getgid();
 
-bool HeaderKMAC::verify(const uint8_t* data, size_t len, const uint8_t* mac_tag, size_t mac_len) {
-    auto calculated = calculate(data, len);
-    if (calculated.size() != mac_len)
-        return false;
-    return ConstantTime::compare(calculated.data(), mac_tag, mac_len);
-}
+        // Abrimos con O_NOFOLLOW para evitar enlaces simbólicos y O_RDONLY porque solo cambiaremos metadatos
+        int fd = open(path.c_str(), O_RDONLY | O_NOFOLLOW);
+        if (fd < 0) return;
 
-// RateLimiter
-RateLimiter::RateLimiter(size_t max_files, size_t max_bytes)
-    : max_files_per_second(max_files), max_bytes_per_second(max_bytes) {
-    reset();
-}
-
-void RateLimiter::reset() {
-    window_start = std::chrono::steady_clock::now();
-    files_processed = 0;
-    bytes_processed = 0;
-}
-
-void RateLimiter::wait_if_needed(size_t bytes) {
-    auto now = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - window_start).count();
-
-    if (elapsed >= 1000) {
-        window_start = now;
-        files_processed = 0;
-        bytes_processed = 0;
-    }
-
-    files_processed++;
-    bytes_processed += bytes;
-
-    if (files_processed > max_files_per_second || bytes_processed > max_bytes_per_second) {
-        size_t wait_ms = 1000 - elapsed;
-        if (wait_ms > 0 && wait_ms < 1000) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(wait_ms));
+        // Usamos fchown y fchmod sobre el descriptor: cero TOCTOU
+        if (fchown(fd, uid, gid) == -1) {
+            // Manejar error silenciosamente si es necesario
         }
+        fchmod(fd, S_IRUSR | S_IWUSR);
+        
+        close(fd);
     }
-}
+};
 
-void RateLimiter::setLimits(size_t max_files, size_t max_bytes) {
-    max_files_per_second = max_files;
-    max_bytes_per_second = max_bytes;
-}
+class FileRAII {
+  private:
+    int fd;
+    std::string path;
+    bool is_open;
 
-// AES256GCM
-bool AES256GCM::write_full_with_retry(int fd, const void* data, size_t size, int max_retries) {
-    const uint8_t* ptr = static_cast<const uint8_t*>(data);
-    size_t remaining = size;
-    int retries = 0;
-
-    while (remaining > 0) {
-        ssize_t written = write(fd, ptr, remaining);
-        if (written <= 0) {
-        if (written == -1 && (errno == EINTR || errno == EAGAIN)) {
-        if (retries++ < max_retries) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));continue; }
-        return false;}
-        return false;
+  public:
+    FileRAII() : fd(-1), is_open(false) {}
+    explicit FileRAII(const std::string& file_path, int flags, mode_t mode = 0644)
+        : fd(-1), path(file_path), is_open(false) {
+        open(file_path, flags, mode);
+    }
+    ~FileRAII() { close(); }
+    bool open(const std::string& file_path, int flags, mode_t mode = 0644) {
+        if (is_open) close();
+        fd = ::open(file_path.c_str(), flags, mode);
+        if (fd >= 0) { is_open = true; path = file_path; }
+        return is_open;
+    }
+    void close() {
+        if (is_open && fd >= 0) { ::close(fd); fd = -1; is_open = false; }
+    }
+    int get() const { return fd; }
+    bool valid() const { return is_open && fd >= 0; }
+    FileRAII(FileRAII&& other) noexcept : fd(other.fd), path(std::move(other.path)), is_open(other.is_open) {
+        other.fd = -1; other.is_open = false;
+    }
+    FileRAII& operator=(FileRAII&& other) noexcept {
+        if (this != &other) {
+            close(); fd = other.fd; path = std::move(other.path); is_open = other.is_open;
+            other.fd = -1; other.is_open = false;
         }
-        ptr += written;
-        remaining -= written;
-        retries = 0;
+        return *this;
     }
-    return true;
-}
+    FileRAII(const FileRAII&) = delete;
+    FileRAII& operator=(const FileRAII&) = delete;
+};
 
-bool AES256GCM::read_full_with_retry(int fd, void* data, size_t size, int max_retries) {
-    uint8_t* ptr = static_cast<uint8_t*>(data);
-    size_t remaining = size;
-    int retries = 0;
+class MMapRAII {
+  private:
+    void* data;
+    size_t size;
+    int fd;
+    bool is_mapped;
 
-    while (remaining > 0) {
-        ssize_t read_bytes = read(fd, ptr, remaining);
-        if (read_bytes <= 0) {
-        if (read_bytes == -1 && (errno == EINTR || errno == EAGAIN)) {
-        if (retries++ < max_retries) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));continue; }
-        return false; }
-        return false;
+  public:
+    MMapRAII() : data(nullptr), size(0), fd(-1), is_mapped(false) {}
+    ~MMapRAII() { unmap(); }
+    bool map(int file_fd, size_t file_size, int prot = PROT_READ, int flags = MAP_PRIVATE) {
+        if (is_mapped) unmap();
+        data = mmap(nullptr, file_size, prot, flags, file_fd, 0);
+        if (data == MAP_FAILED) { data = nullptr; return false; }
+        size = file_size; fd = file_fd; is_mapped = true;
+        madvise(data, size, MADV_SEQUENTIAL);
+        return true;
+    }
+    void unmap() {
+        if (is_mapped && data && data != MAP_FAILED) { munmap(data, size); data = nullptr; is_mapped = false; }
+    }
+    void* get() const { return data; }
+    size_t get_size() const { return size; }
+    bool valid() const { return is_mapped && data && data != MAP_FAILED; }
+    MMapRAII(MMapRAII&& other) noexcept : data(other.data), size(other.size), fd(other.fd), is_mapped(other.is_mapped) {
+        other.data = nullptr; other.is_mapped = false;
+    }
+    MMapRAII& operator=(MMapRAII&& other) noexcept {
+        if (this != &other) {
+            unmap(); data = other.data; size = other.size; fd = other.fd; is_mapped = other.is_mapped;
+            other.data = nullptr; other.is_mapped = false;
         }
-        ptr += read_bytes;
-        remaining -= read_bytes;
-        retries = 0;
+        return *this;
     }
-    return true;
-}
-
-bool AES256GCM::validate_header_integrity(const uint8_t* data, size_t size) {
-    if (size < config.nonce_size + 1 + 8)
-    return false;
-    uint8_t flags = data[config.nonce_size];
-    if (flags != 0x01 && flags != 0x03)
-    return false;
-    return true;
-}
-
-bool AES256GCM::encrypt_with_mmap(const MMapRAII& mapped, const std::string& outputPath) {
-    Botan::secure_vector<uint8_t> file_nonce(config.nonce_size);
-    SecureRandom::generate_bytes(file_nonce.data(), file_nonce.size());
-
-    FileRAII out_file(outputPath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (!out_file.valid())
-    return false;
-
-    if (!write_full_with_retry(out_file.get(), file_nonce.data(), file_nonce.size()))
-    return false;
-
-    uint8_t flags = 0x01 | (config.use_header_mac ? 0x02 : 0);
-    if (!write_full_with_retry(out_file.get(), &flags, 1))
-    return false;
-
-    uint64_t original_size = mapped.get_size();
-    if (!write_full_with_retry(out_file.get(), &original_size, 8))
-    return false;
-
-    Botan::secure_vector<uint8_t> header_data;
-    header_data.insert(header_data.end(), file_nonce.begin(), file_nonce.end());
-    header_data.push_back(flags);
-    header_data.insert(header_data.end(),
-                       reinterpret_cast<uint8_t*>(&original_size),
-                       reinterpret_cast<uint8_t*>(&original_size) + 8);
-
-    if (config.use_header_mac) {
-    auto mac = header_mac.calculate(header_data.data(), header_data.size());
-    if (!write_full_with_retry(out_file.get(), mac.data(), mac.size()))
-    return false;
-    }
-
-    auto cipher = Botan::AEAD_Mode::create_or_throw("AES-256/GCM", Botan::Cipher_Dir::Encryption);
-    cipher->set_key(key);
-    cipher->set_associated_data(header_data.data(), header_data.size());
-    cipher->start(file_nonce);
-
-    size_t buffer_size = config.optimal_buffer_size;
-    Botan::secure_vector<uint8_t> buffer;
-
-    const uint8_t* data_ptr = static_cast<const uint8_t*>(mapped.get());
-    size_t remaining = mapped.get_size();
-
-    if (remaining == 0) {
-        Botan::secure_vector<uint8_t> empty_buf;
-        cipher->finish(empty_buf);
-        if (!write_full_with_retry(out_file.get(), empty_buf.data(), empty_buf.size()))
-            return false;
-    }
-    else {
-        while (remaining > 0) {
-            size_t chunk = std::min(buffer_size, remaining);
-            buffer.assign(data_ptr, data_ptr + chunk);
-
-            if (remaining <= chunk)
-                cipher->finish(buffer);
-            else
-                cipher->update(buffer);
-
-            if (!write_full_with_retry(out_file.get(), buffer.data(), buffer.size()))
-                return false;
-
-            data_ptr += chunk;
-            remaining -= chunk;
-            rate_limiter->wait_if_needed(chunk);
-        }
-    }
-
-    total_bytes_processed += mapped.get_size();
-    return true;
-}
-
-bool AES256GCM::decrypt_with_mmap(const MMapRAII& mapped, const std::string& outputPath) {
-    const uint8_t* data = static_cast<const uint8_t*>(mapped.get());
-    size_t total_size = mapped.get_size();
-
-    if (!validate_header_integrity(data, total_size))
-        return false;
-
-    size_t pos = 0;
-
-    Botan::secure_vector<uint8_t> file_nonce(config.nonce_size);
-    std::memcpy(file_nonce.data(), data + pos, config.nonce_size);
-    pos += config.nonce_size;
-
-    uint8_t flags = data[pos++];
-    bool has_mac = (flags & 0x02) != 0;
-
-    uint64_t original_size;
-    std::memcpy(&original_size, data + pos, 8);
-    pos += 8;
-
-    Botan::secure_vector<uint8_t> header_data;
-    header_data.insert(header_data.end(), file_nonce.begin(), file_nonce.end());
-    header_data.push_back(flags);
-    header_data.insert(header_data.end(),
-                       reinterpret_cast<uint8_t*>(&original_size),
-                       reinterpret_cast<uint8_t*>(&original_size) + 8);
-
-    if (has_mac) {
-        if (pos + 32 > total_size)
-            return false;
-        Botan::secure_vector<uint8_t> file_mac(32);
-        std::memcpy(file_mac.data(), data + pos, 32);
-        pos += 32;
-
-        if (!header_mac.verify(header_data.data(), header_data.size(), file_mac.data(), file_mac.size())) {
-            return false;
-        }
-    }
-
-    auto cipher = Botan::AEAD_Mode::create_or_throw("AES-256/GCM", Botan::Cipher_Dir::Decryption);
-    cipher->set_key(key);
-    cipher->set_associated_data(header_data.data(), header_data.size());
-    cipher->start(file_nonce);
-
-    FileRAII out_file(outputPath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (!out_file.valid())
-        return false;
-
-    if (total_size < pos + SystemConfig::GCM_TAG_SIZE)
-        return false;
-
-    size_t ciphertext_size = total_size - pos - SystemConfig::GCM_TAG_SIZE;
-    size_t buffer_size = config.optimal_buffer_size;
-    Botan::secure_vector<uint8_t> buffer;
-
-    if (ciphertext_size == 0) {
-        Botan::secure_vector<uint8_t> tag(data + pos, data + pos + SystemConfig::GCM_TAG_SIZE);
-        cipher->finish(tag);
-    } else {
-        while (ciphertext_size > 0) {
-            size_t chunk = std::min(buffer_size, ciphertext_size);
-            buffer.assign(data + pos, data + pos + chunk);
-            pos += chunk;
-
-            if (chunk >= ciphertext_size) {
-                if (pos + SystemConfig::GCM_TAG_SIZE > total_size)
-                    return false;
-                buffer.insert(buffer.end(), data + pos, data + pos + SystemConfig::GCM_TAG_SIZE);
-                cipher->finish(buffer);
-            } else {
-                cipher->update(buffer);
-            }
-
-            if (!write_full_with_retry(out_file.get(), buffer.data(), buffer.size()))
-                return false;
-
-            ciphertext_size -= chunk;
-            rate_limiter->wait_if_needed(chunk);
-        }
-    }
-
-    total_bytes_processed += original_size;
-    return true;
-}
-
-bool AES256GCM::process_with_traditional_io(const std::string& inputPath,
-                                            const std::string& outputPath,
-                                            bool encryptMode) {
-    FileRAII in_file(inputPath, O_RDONLY);
-    if (!in_file.valid())
-        return false;
-
-    struct stat st;
-    if (fstat(in_file.get(), &st) != 0)
-        return false;
-    size_t file_size = st.st_size;
-
-    if (encryptMode) {
-        FileRAII out_file(outputPath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if (!out_file.valid())
-            return false;
-
-        Botan::secure_vector<uint8_t> file_nonce(config.nonce_size);
-        SecureRandom::generate_bytes(file_nonce.data(), file_nonce.size());
-
-        if (!write_full_with_retry(out_file.get(), file_nonce.data(), file_nonce.size()))
-            return false;
-
-        uint8_t flags = 0x01 | (config.use_header_mac ? 0x02 : 0);
-        if (!write_full_with_retry(out_file.get(), &flags, 1))
-            return false;
-
-        uint64_t original_size = file_size;
-        if (!write_full_with_retry(out_file.get(), &original_size, 8))
-            return false;
-
-        Botan::secure_vector<uint8_t> header_data;
-        header_data.insert(header_data.end(), file_nonce.begin(), file_nonce.end());
-        header_data.push_back(flags);
-        header_data.insert(header_data.end(),
-                           reinterpret_cast<uint8_t*>(&original_size),
-                           reinterpret_cast<uint8_t*>(&original_size) + 8);
-
-        if (config.use_header_mac) {
-            auto mac = header_mac.calculate(header_data.data(), header_data.size());
-            if (!write_full_with_retry(out_file.get(), mac.data(), mac.size()))
-                return false;
-        }
-
-        auto cipher = Botan::AEAD_Mode::create_or_throw("AES-256/GCM", Botan::Cipher_Dir::Encryption);
-        cipher->set_key(key);
-        cipher->set_associated_data(header_data.data(), header_data.size());
-        cipher->start(file_nonce);
-
-        size_t buffer_size = config.optimal_buffer_size;
-        std::vector<uint8_t> buffer(buffer_size);
-        size_t total_read = 0;
-
-        if (file_size == 0) {
-            Botan::secure_vector<uint8_t> empty_buf;
-            cipher->finish(empty_buf);
-            if (!write_full_with_retry(out_file.get(), empty_buf.data(), empty_buf.size()))
-                return false;
-        } else {
-            while (total_read < file_size) {
-                size_t to_read = std::min(buffer_size, file_size - total_read);
-                if (!read_full_with_retry(in_file.get(), buffer.data(), to_read))
-                    return false;
-
-                Botan::secure_vector<uint8_t> secure_buf(buffer.data(), buffer.data() + to_read);
-
-                if (total_read + to_read >= file_size)
-                    cipher->finish(secure_buf);
-                else
-                    cipher->update(secure_buf);
-
-                if (!write_full_with_retry(out_file.get(), secure_buf.data(), secure_buf.size()))
-                    return false;
-
-                total_read += to_read;
-                rate_limiter->wait_if_needed(to_read);
-            }
-        }
-    } else {
-        FileRAII out_file(outputPath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if (!out_file.valid())
-            return false;
-
-        Botan::secure_vector<uint8_t> file_nonce(config.nonce_size);
-        if (!read_full_with_retry(in_file.get(), file_nonce.data(), file_nonce.size()))
-            return false;
-
-        uint8_t flags;
-        if (!read_full_with_retry(in_file.get(), &flags, 1))
-            return false;
-        bool has_mac = (flags & 0x02) != 0;
-
-        uint64_t original_size;
-        if (!read_full_with_retry(in_file.get(), &original_size, 8))
-            return false;
-
-        Botan::secure_vector<uint8_t> header_data;
-        header_data.insert(header_data.end(), file_nonce.begin(), file_nonce.end());
-        header_data.push_back(flags);
-        header_data.insert(header_data.end(),
-                           reinterpret_cast<uint8_t*>(&original_size),
-                           reinterpret_cast<uint8_t*>(&original_size) + 8);
-
-        if (has_mac) {
-            Botan::secure_vector<uint8_t> file_mac(32);
-            if (!read_full_with_retry(in_file.get(), file_mac.data(), 32))
-                return false;
-            if (!header_mac.verify(header_data.data(), header_data.size(), file_mac.data(), file_mac.size()))
-                return false;
-        }
-
-        auto cipher = Botan::AEAD_Mode::create_or_throw("AES-256/GCM", Botan::Cipher_Dir::Decryption);
-        cipher->set_key(key);
-        cipher->set_associated_data(header_data.data(), header_data.size());
-        cipher->start(file_nonce);
-
-        off_t current_pos = lseek(in_file.get(), 0, SEEK_CUR);
-        off_t file_end = lseek(in_file.get(), 0, SEEK_END);
-        lseek(in_file.get(), current_pos, SEEK_SET);
-
-        if ((size_t)(file_end - current_pos) < SystemConfig::GCM_TAG_SIZE)
-            return false;
-
-        size_t ciphertext_size = file_end - current_pos - SystemConfig::GCM_TAG_SIZE;
-        size_t buffer_size = config.optimal_buffer_size;
-        std::vector<uint8_t> buffer(buffer_size);
-        size_t total_read = 0;
-
-        if (ciphertext_size == 0) {
-            Botan::secure_vector<uint8_t> tag(SystemConfig::GCM_TAG_SIZE);
-            if (!read_full_with_retry(in_file.get(), tag.data(), tag.size()))
-                return false;
-            cipher->finish(tag);
-        } else {
-            while (total_read < ciphertext_size) {
-                size_t to_read = std::min(buffer_size, ciphertext_size - total_read);
-                if (!read_full_with_retry(in_file.get(), buffer.data(), to_read))
-                    return false;
-
-                Botan::secure_vector<uint8_t> secure_buf(buffer.data(), buffer.data() + to_read);
-
-                if (total_read + to_read >= ciphertext_size) {
-                    Botan::secure_vector<uint8_t> tag(SystemConfig::GCM_TAG_SIZE);
-                    if (!read_full_with_retry(in_file.get(), tag.data(), tag.size()))
-                        return false;
-                    secure_buf.insert(secure_buf.end(), tag.begin(), tag.end());
-                    cipher->finish(secure_buf);
-                } else {
-                    cipher->update(secure_buf);
-                }
-
-                if (!write_full_with_retry(out_file.get(), secure_buf.data(), secure_buf.size()))
-                    return false;
-
-                total_read += to_read;
-                rate_limiter->wait_if_needed(to_read);
-            }
-        }
-    }
-
-    total_files_processed++;
-    total_bytes_processed += file_size;
-    return true;
-}
-
-bool AES256GCM::process_with_mmap_wrapper(const std::string& inputPath,
-                                          const std::string& outputPath,
-                                          bool encryptMode) {
-    FileRAII in_file(inputPath, O_RDONLY);
-    if (!in_file.valid())
-        return false;
-
-    struct stat st;
-    if (fstat(in_file.get(), &st) != 0)
-        return false;
-
-    MMapRAII mmap;
-    if (st.st_size == 0 || !mmap.map(in_file.get(), st.st_size)) {
-        return process_with_traditional_io(inputPath, outputPath, encryptMode);
-    }
-
-    mmap_used++;
-
-    try {
-        if (encryptMode)
-            return encrypt_with_mmap(mmap, outputPath);
-        else
-            return decrypt_with_mmap(mmap, outputPath);
-    } catch (const std::exception&) {
+    MMapRAII(const MMapRAII&) = delete;
+    MMapRAII& operator=(const MMapRAII&) = delete;
+};
+
+class MemoryLockRAII {
+  private:
+    void* ptr;
+    size_t size;
+    bool locked;
+
+  public:
+    MemoryLockRAII(void* memory_ptr, size_t memory_size) : ptr(memory_ptr), size(memory_size), locked(false) { lock(); }
+    ~MemoryLockRAII() { unlock(); }
+    bool lock() {
+        if (locked || !ptr || size == 0) return false;
+#ifdef __unix__
+        if (mlock(ptr, size) == 0) { locked = true; return true; }
+#endif
         return false;
     }
-}
-
-bool AES256GCM::process_single_file_with_retry(const std::string& inputPath,
-                                               const std::string& outputPath,
-                                               bool encryptMode) {
-    int retries = 0;
-    bool success = false;
-
-    while (retries <= static_cast<int>(config.max_retries) && !success) {
-        if (retries > 0) {
-            total_retries++;
-            std::this_thread::sleep_for(std::chrono::milliseconds(config.retry_delay_ms));
-            std::remove(outputPath.c_str());
-        }
-
-        try {
-            rate_limiter->wait_if_needed();
-
-            struct stat st;
-            if (stat(inputPath.c_str(), &st) != 0)
-                return false;
-
-            if (config.should_use_mmap(st.st_size)) {
-                success = process_with_mmap_wrapper(inputPath, outputPath, encryptMode);
-            } else {
-                success = process_with_traditional_io(inputPath, outputPath, encryptMode);
-            }
-        } catch (const std::exception&) {
-            success = false;
-        }
-
-        retries++;
-    }
-
-    if (!success)
-        total_errors++;
-    return success;
-}
-
-void AES256GCM::file_worker_function() {
-    while (workers_running.load()) {
-        FileWork work;
-        if (work_queue.pop(work)) {
-            bool result = process_single_file_with_retry(work.input_path, work.output_path, work.is_encrypt);
-            work.result_promise.set_value(result);
+    void unlock() {
+        if (locked && ptr && size > 0) {
+#ifdef __unix__
+            munlock(ptr, size);
+#endif
+            locked = false;
         }
     }
-}
+    MemoryLockRAII(const MemoryLockRAII&) = delete;
+    MemoryLockRAII& operator=(const MemoryLockRAII&) = delete;
+};
 
-AES256GCM::AES256GCM(const uint8_t* key_data,
-                     size_t key_len,
-                     size_t num_threads,
-                     size_t queue_sz,
-                     const SystemConfig& cfg)
-    : work_queue(queue_sz), workers_running(true), config(cfg) {
-
-    key.assign(key_data, key_data + key_len);
-    header_mac.set_key(key);
-    rate_limiter = std::make_unique<RateLimiter>();
-
-    for (size_t i = 0; i < num_threads; i++) {
-        file_workers.emplace_back(&AES256GCM::file_worker_function, this);
+class ConstantTime {
+  public:
+    static bool compare(const uint8_t* a, const uint8_t* b, size_t len) {
+        volatile uint8_t diff = 0;
+        for (size_t i = 0; i < len; i++) diff |= a[i] ^ b[i];
+        return diff == 0;
     }
-}
+};
 
-AES256GCM::~AES256GCM() {
-    workers_running = false;
-    work_queue.stop();
-    for (auto& thread : file_workers) {
-        if (thread.joinable())
-            thread.join();
+class SecMemGuard {
+  public:
+    static bool lock_memory(void* ptr, size_t size) {
+        if (ptr && size > 0) { MemoryLockRAII lock(ptr, size); return lock.lock(); }
+        return false;
     }
-    if (!key.empty()) {
-        SecMemGuard::secure_memset(key.data(), 0, key.size());
+    static void secure_memset(void* ptr, int value, size_t num) {
+        volatile unsigned char* p = static_cast<volatile unsigned char*>(ptr);
+        while (num--) *p++ = static_cast<unsigned char>(value);
     }
-}
+};
 
-void AES256GCM::setRateLimits(size_t max_files, size_t max_bytes) {
-    rate_limiter->setLimits(max_files, max_bytes);
-}
-
-bool AES256GCM::encrypt_file(const std::string& inputPath, const std::string& outputPath) {
-    return process_single_file_with_retry(inputPath, outputPath, true);
-}
-
-bool AES256GCM::decrypt_file(const std::string& inputPath, const std::string& outputPath) {
-    return process_single_file_with_retry(inputPath, outputPath, false);
-}
-
-std::vector<bool> AES256GCM::process_files_parallel(const std::vector<std::pair<std::string, std::string>>& files,
-                                                    bool encryptMode) {
-    std::vector<std::future<bool>> futures;
-    futures.reserve(files.size());
-    std::vector<bool> results;
-    results.reserve(files.size());
-
-    for (const auto& [input, output] : files) {
-        std::promise<bool> promise;
-        futures.push_back(promise.get_future());
-
-        FileWork work;
-        work.input_path = input;
-        work.output_path = output;
-        work.is_encrypt = encryptMode;
-        work.result_promise = std::move(promise);
-
-        work_queue.push(std::move(work));
+class SecureRandom {
+  private:
+    static Botan::AutoSeeded_RNG& getBotanRNG() { static Botan::AutoSeeded_RNG rng; return rng; }
+    static Botan::System_RNG& getHardwareRNG() { static Botan::System_RNG rng; return rng; }
+    inline static bool use_hardware = true;
+  public:
+    static void setUseHardware(bool use) { use_hardware = use; }
+    static void generate_bytes(uint8_t* data, size_t size) {
+        if (use_hardware) getHardwareRNG().randomize(data, size);
+        else getBotanRNG().randomize(data, size);
     }
-
-    for (auto& future : futures) {
-        results.push_back(future.get());
+    static Botan::secure_vector<uint8_t> secure_random(size_t size) {
+        Botan::secure_vector<uint8_t> result(size);
+        generate_bytes(result.data(), size);
+        return result;
     }
-    return results;
-}
+    static uint64_t random_uint64() {
+        uint64_t value;
+        generate_bytes(reinterpret_cast<uint8_t*>(&value), sizeof(value));
+        return value;
+    }
+};
 
-std::string AES256GCM::provider() const {
-    auto test = Botan::AEAD_Mode::create_or_throw("AES-256/GCM", Botan::Cipher_Dir::Encryption);
-    return test->provider();
-}
+class HeaderKMAC {
+  private:
+    Botan::secure_vector<uint8_t> mac_key;
+  public:
+    HeaderKMAC() = default;
+    void set_key(const Botan::secure_vector<uint8_t>& master_key);
+    Botan::secure_vector<uint8_t> calculate(const uint8_t* data, size_t len);
+    bool verify(const uint8_t* data, size_t len, const uint8_t* mac, size_t mac_len);
+};
 
-bool AES256GCM::has_aes_ni() const {
-    std::string prov = provider();
-    return prov.find("aes-ni") != std::string::npos || prov.find("clmul") != std::string::npos;
-}
+class RateLimiter {
+  private:
+    std::chrono::steady_clock::time_point window_start;
+    std::atomic<size_t> files_processed;
+    std::atomic<size_t> bytes_processed;
+    size_t max_files_per_second;
+    size_t max_bytes_per_second;
+    std::mutex rate_mutex;
+  public:
+    RateLimiter(size_t max_files = 1000, size_t max_bytes = 1024 * 1024 * 1024);
+    void reset();
+    void wait_if_needed(size_t bytes = 0);
+    void setLimits(size_t max_files, size_t max_bytes);
+};
+
+template <typename T> class WorkQueue {
+  private:
+    std::deque<T> queue;
+    std::mutex mutex;
+    std::condition_variable not_empty;
+    std::condition_variable not_full;
+    std::atomic<bool> stopped{false};
+    size_t max_size;
+    std::atomic<size_t> queue_size{0};
+
+  public:
+    WorkQueue(size_t max_sz = 64) : max_size(max_sz) {}
+    ~WorkQueue() { stop(); }
+    void push(T item) {
+        std::unique_lock<std::mutex> lock(mutex);
+        not_full.wait(lock, [this]() { return queue.size() < max_size || stopped; });
+        if (stopped) return;
+        queue.push_back(std::move(item));
+        queue_size++;
+        not_empty.notify_one();
+    }
+    bool pop(T& item) {
+        std::unique_lock<std::mutex> lock(mutex);
+        not_empty.wait(lock, [this]() { return !queue.empty() || stopped; });
+        if (stopped && queue.empty()) return false;
+        item = std::move(queue.front());
+        queue.pop_front();
+        queue_size--;
+        not_full.notify_one();
+        return true;
+    }
+    void stop() { stopped = true; not_empty.notify_all(); not_full.notify_all(); }
+    size_t size() const { return queue_size.load(); }
+};
+
+struct FileWork {
+    std::string input_path;
+    std::string output_path;
+    bool is_encrypt;
+    std::promise<bool> result_promise;
+    uint64_t file_size;
+    int retry_count;
+    FileWork() : is_encrypt(true), file_size(0), retry_count(0) {}
+    FileWork(FileWork&& other) noexcept
+        : input_path(std::move(other.input_path)), output_path(std::move(other.output_path)),
+          is_encrypt(other.is_encrypt), result_promise(std::move(other.result_promise)), file_size(other.file_size),
+          retry_count(other.retry_count) {}
+    FileWork& operator=(FileWork&& other) noexcept {
+        if (this != &other) {
+            input_path = std::move(other.input_path);
+            output_path = std::move(other.output_path);
+            is_encrypt = other.is_encrypt;
+            result_promise = std::move(other.result_promise);
+            file_size = other.file_size;
+            retry_count = other.retry_count;
+        }
+        return *this;
+    }
+    FileWork(const FileWork&) = delete;
+    FileWork& operator=(const FileWork&) = delete;
+};
+
+class NameKeyMgr {
+  private:
+    std::string key_file_path;
+    Botan::secure_vector<uint8_t> master_key;
+    Botan::secure_vector<uint8_t> name_key;
+    bool initialized = false;
+    Botan::secure_vector<uint8_t> derive_name_key(const Botan::secure_vector<uint8_t>& master);
+    bool write_full(int fd, const void* data, size_t size);
+    bool read_full(int fd, void* data, size_t size);
+    bool save_master_key();
+    bool load_master_key();
+  public:
+    explicit NameKeyMgr(const std::string& key_file);
+    ~NameKeyMgr();
+    const Botan::secure_vector<uint8_t>& get_name_key() const { return name_key; }
+    bool is_initialized() const { return initialized && name_key.size() == 32; }
+};
+
+class PersistCounter {
+  private:
+    std::map<std::string, uint64_t> counters;
+    mutable std::shared_timed_mutex counters_mutex;
+    std::string storage_file;
+    std::atomic<bool> dirty{false};
+    std::atomic<uint64_t> save_counter{0};
+    std::atomic<bool> is_saving{false};
+    std::condition_variable save_cv;
+    std::mutex save_mutex;
+    std::thread auto_save_thread;
+    std::atomic<bool> auto_save_running{false};
+    static constexpr uint64_t SAVE_THRESHOLD = 5;
+    static constexpr int AUTO_SAVE_INTERVAL_MS = 3000;
+    bool write_full(int fd, const void* data, size_t size);
+    bool read_full(int fd, void* data, size_t size);
+    void load_from_file();
+    bool save_to_file_internal();
+    void auto_save_loop();
+  
+    public:
+    explicit PersistCounter(const std::string& file_path);
+    ~PersistCounter();
+    uint64_t get_and_increment(const std::string& key);
+    uint64_t get(const std::string& key) const;
+    bool force_save() { return save_to_file_internal(); }
+    size_t size() const {
+        std::shared_lock<std::shared_timed_mutex> lock(counters_mutex);
+        return counters.size();
+    }
+};
+
+class NameObfus {
+  private:
+    Botan::secure_vector<uint8_t> name_key;
+    std::unique_ptr<PersistCounter> persistent_counter;
+    std::unique_ptr<NameKeyMgr> key_manager;
+    struct NameCacheEntry {
+        std::string original;
+        std::string obfuscated;
+        std::chrono::steady_clock::time_point timestamp;
+        std::atomic<uint64_t> hits;
+        NameCacheEntry() : hits(0) { timestamp = std::chrono::steady_clock::now(); }
+    };
+    std::vector<std::unique_ptr<NameCacheEntry>> name_cache;
+    std::shared_mutex cache_mutex;
+    std::atomic<size_t> cache_index{0};
+    size_t cache_size;
+    static std::string base64_url_encode(const std::string& data);
+    static std::string base64_url_decode(const std::string& encoded);
+    struct EncryptedName {
+        std::vector<uint8_t> nonce;
+        std::string ciphertext;
+        std::string serialize() const {
+            std::string result;
+            result.reserve(nonce.size() + ciphertext.size());
+            result.append(reinterpret_cast<const char*>(nonce.data()), nonce.size());
+            result.append(ciphertext);
+            return result;
+        }
+        static EncryptedName deserialize(const std::string& data) {
+            EncryptedName result;
+            if (data.size() < 16) throw std::runtime_error("Datos muy pequeños");
+            result.nonce.assign(data.begin(), data.begin() + 16);
+            result.ciphertext = data.substr(16);
+            return result;
+        }
+    };
+  
+    public:
+    NameObfus(size_t cache_sz = 1024,
+              const std::string& counter_file = ".cipher_counters.dat",
+              const std::string& key_file = ".cipher_namekey.dat");
+    ~NameObfus();
+    std::string obfuscate_name(const std::string& original_name);
+    std::string deobfuscate_name(const std::string& obfuscated_name);
+    void force_save_counters();
+};
+
+class AES256GCM {
+  private:
+    Botan::secure_vector<uint8_t> key;
+    std::vector<std::thread> file_workers;
+    WorkQueue<FileWork> work_queue;
+    std::atomic<bool> workers_running;
+    std::unique_ptr<RateLimiter> rate_limiter;
+    HeaderKMAC header_mac;
+    SystemConfig config;
+    std::atomic<uint64_t> total_files_processed{0};
+    std::atomic<uint64_t> total_bytes_processed{0};
+    std::atomic<uint64_t> total_errors{0};
+    std::atomic<uint64_t> total_retries{0};
+    std::atomic<uint64_t> mmap_used{0};
+    bool write_full_with_retry(int fd, const void* data, size_t size, int max_retries = 3);
+    bool read_full_with_retry(int fd, void* data, size_t size, int max_retries = 3);
+    bool validate_header_integrity(const uint8_t* data, size_t size);
+    bool encrypt_with_mmap(const MMapRAII& mapped, const std::string& outputPath);
+    bool decrypt_with_mmap(const MMapRAII& mapped, const std::string& outputPath);
+    
+    // NUEVAS FUNCIONES PARA BAJAR LA COMPLEJIDAD (Separadas de process_with_traditional_io)
+    bool encrypt_with_traditional_io(const std::string& inputPath, const std::string& outputPath);
+    bool decrypt_with_traditional_io(const std::string& inputPath, const std::string& outputPath);
+    
+    bool process_with_traditional_io(const std::string& inputPath, const std::string& outputPath, bool encryptMode);
+    bool process_with_mmap_wrapper(const std::string& inputPath, const std::string& outputPath, bool encryptMode);
+    bool process_single_file_with_retry(const std::string& inputPath, const std::string& outputPath, bool encryptMode);
+    void file_worker_function();
+  
+    public:
+    AES256GCM(const uint8_t* key_data, size_t key_len, size_t num_threads, size_t queue_sz, const SystemConfig& cfg);
+    ~AES256GCM();
+    void setRateLimits(size_t max_files, size_t max_bytes);
+    bool encrypt_file(const std::string& inputPath, const std::string& outputPath);
+    bool decrypt_file(const std::string& inputPath, const std::string& outputPath);
+    std::vector<bool> process_files_parallel(const std::vector<std::pair<std::string, std::string>>& files, bool encryptMode);
+    std::string name() const { return "AES-256-GCM"; }
+    std::string provider() const;
+    bool has_aes_ni() const;
+    uint64_t get_files_processed() const { return total_files_processed.load(); }
+    uint64_t get_bytes_processed() const { return total_bytes_processed.load(); }
+    uint64_t get_errors() const { return total_errors.load(); }
+    uint64_t get_retries() const { return total_retries.load(); }
+    uint64_t get_mmap_used() const { return mmap_used.load(); }
+};
+
+class UniversalCipher {
+  public:
+    using LogCallback = std::function<void(univ_log::LogLevel level, univ_log::LogEvent event, const std::string& data)>;
+    using ProgressCallback = std::function<void(size_t current, size_t total, const std::string& file)>;
+    struct Stats {
+        size_t total_files = 0;
+        size_t success = 0;
+        size_t fail = 0;
+        uint64_t total_time_ms = 0;
+    };
+    const Stats& getLastStats() const { return last_stats; }
+ 
+    private:
+    SystemConfig config;
+    KeyManager* keyManager;
+    std::unique_ptr<NameObfus> name_obfuscator;
+    std::unique_ptr<AES256GCM> cipher;
+    std::string currentKeyName;
+    std::atomic<bool> processing_active{false};
+    std::atomic<bool> stop_requested{false};
+    Stats last_stats;
+    LogCallback log_cb_;
+    ProgressCallback progress_cb_;
+    void log(univ_log::LogLevel level, univ_log::LogEvent event, const std::string& data = "") {
+        if (log_cb_) log_cb_(level, event, data);
+    }
+    void progress(size_t cur, size_t total, const std::string& file) {
+        if (progress_cb_) progress_cb_(cur, total, file);
+    }
+    Botan::secure_vector<uint8_t> hexToSecureBytes(const std::string& hex);
+    std::string secureVectorToHex(const Botan::secure_vector<uint8_t>& data);
+    bool fileExists(const std::string& path);
+    bool isDirectory(const std::string& path);
+    uint64_t getFileSize(const std::string& path);
+    bool should_ignore_file(const std::string& filename);
+    bool is_already_encrypted(const std::string& filename);
+    std::vector<std::string> getAllFiles(const std::string& path, bool recursive = true);
+    bool processDirectory(const std::string& path, bool encryptMode);
+    bool encryptFileInPlace(const std::string& inputPath);
+    bool decryptFileInPlace(const std::string& inputPath);
+    bool processPath(const std::string& path, bool encryptMode);
+  
+    public:
+    UniversalCipher();
+    ~UniversalCipher();
+    void setLogCallback(LogCallback cb) { log_cb_ = std::move(cb); }
+    void setProgressCallback(ProgressCallback cb) { progress_cb_ = std::move(cb); }
+    void setKeyManager(KeyManager* km) { keyManager = km; }
+    void stop() { if (processing_active) stop_requested = true; }
+    bool encryptPath(const std::string& path);
+    bool decryptPath(const std::string& path);
+    SystemConfig& getConfig() { return config; }
+    const SystemConfig& getConfig() const { return config; }
+    const std::string& getCurrentKeyName() const { return currentKeyName; }
+    NameObfus* getNameObfuscator() { return name_obfuscator.get(); }
+    KeyManager* getKeyManager() { return keyManager; }
+    bool setCipherKey(const std::string& keyName);
+    uint64_t getFilesProcessed() const;
+    uint64_t getBytesProcessed() const;
+    uint64_t getErrors() const;
+    uint64_t getRetries() const;
+    uint64_t getMmapUsed() const;
+};
+
+#endif // CIPHER_UNIVERSAL_CIPHER_H
