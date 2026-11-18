@@ -75,8 +75,9 @@ bool NameKeyMgr::save_master_key()
     cipher->finish(encrypted);
 
     if (!write_full(file.get(), salt.data(), 16) || 
-    !write_full(file.get(), iv.data(), 16) ||
-    !write_full(file.get(), encrypted.data(), encrypted.size())) {
+        !write_full(file.get(), iv.data(), 16) ||
+        !write_full(file.get(),
+        encrypted.data(), encrypted.size())) {
         return false;
     }
 
@@ -384,7 +385,7 @@ std::string NameObfus::base64_url_encode(const std::string& data)
     std::string encoded = Botan::base64_encode(reinterpret_cast<const uint8_t*>(data.data()), data.size());
     std::replace(encoded.begin(), encoded.end(), '+', '-');
     std::replace(encoded.begin(), encoded.end(), '/', '_');
-    encoded.erase(std::remove(encoded.begin(), encoded.end(), '='), encoded.end());
+    encoded.erase(std::remove(encoded.begin(),encoded.end(), '='), encoded.end());
         return encoded;
 }
 
@@ -440,7 +441,8 @@ std::string NameObfus::obfuscate_name(
     {
         std::shared_lock<std::shared_mutex> lock(cache_mutex);
         for (const auto& entry : name_cache) {
-    if (entry->original == original_name && !entry->original.empty()) {
+    if (entry->original == original_name 
+        && !entry->original.empty()) {
                 entry->hits++;
         return entry->obfuscated;
             }
@@ -506,7 +508,8 @@ std::string NameObfus::deobfuscate_name(
     }
 
     try {
-        if (obfuscated_name.length() <= 4 || obfuscated_name.substr(obfuscated_name.length() - 4) != ".enc") {
+        if (obfuscated_name.length() <= 4 || 
+            obfuscated_name.substr(obfuscated_name.length() - 4) != ".enc") {
         return obfuscated_name;
         }
         std::string base64_part = obfuscated_name.substr(0, obfuscated_name.length() - 4);
