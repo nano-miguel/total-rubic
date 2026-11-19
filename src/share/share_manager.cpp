@@ -16,16 +16,19 @@ bool ShareManager::checkTrust(
     if (!trust_prompt_cb_)
         return false;
 
-    log(share_log::LogLevel::Warning, share_log::LogEvent::TrustPromptShown, rem_user + ":" + fprint);
+    log(share_log::LogLevel::Warning, 
+        share_log::LogEvent::TrustPromptShown, rem_user + ":" + fprint);
 
     bool accept = trust_prompt_cb_(rem_user, fprint, is_srv);
     if (accept) {
         trust_fprints.insert(fprint);
         saveTrust();
-        log(share_log::LogLevel::Success, share_log::LogEvent::TrustAccepted, rem_user);
+        log(share_log::LogLevel::Success, 
+            share_log::LogEvent::TrustAccepted, rem_user);
         return true;
     }
-    log(share_log::LogLevel::Warning, share_log::LogEvent::TrustRejected, rem_user);
+    log(share_log::LogLevel::Warning, 
+        share_log::LogEvent::TrustRejected, rem_user);
     return false;
 }
 
@@ -35,8 +38,8 @@ bool ShareManager::checkTrust(
 bool ShareManager::genKyber() {
     try {
         Botan::Kyber_PrivateKey kyber_key(rng, Botan::KyberMode::Kyber1024_R3);
-        kyber_priv_key.reset(new Botan::Kyber_PrivateKey(kyber_key));
-        kyber_pub_key = Botan::X509::copy_key(*kyber_priv_key);
+             kyber_priv_key.reset(new Botan::Kyber_PrivateKey(kyber_key));
+             kyber_pub_key = Botan::X509::copy_key(*kyber_priv_key);
         return true;
     } catch (...) {
         return false;
@@ -78,7 +81,7 @@ std::vector<uint8_t> ShareManager::decChunk(
 
         std::vector<uint8_t> nonce(data.begin(), data.begin() + 12);
         auto ctext = toSec(std::vector<uint8_t>(data.begin() + 12, data.end()));
-
+//considera cambiar chacha por aes_ni por que hay mas pc no ni degarlo de fallbakc chacha20 si no hay aes ni porquerias xd
         auto chacha = Botan::AEAD_Mode::create("ChaCha20Poly1305", Botan::Cipher_Dir::Decryption);
         if (!chacha)
             return {};
@@ -134,11 +137,13 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
             std::string& rem_fprint,
             std::vector<uint8_t>& sess_key) {
     try {
-        log(share_log::LogLevel::Info, share_log::LogEvent::Connecting, rem_addr + ":" + std::to_string(rem_port));
+        log(share_log::LogLevel::Info, 
+            share_log::LogEvent::Connecting, rem_addr + ":" + std::to_string(rem_port));
 
         int sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock < 0) {
-            log(share_log::LogLevel::Error, share_log::LogEvent::ConnectFailed, "socket()");
+            log(share_log::LogLevel::Error, 
+                share_log::LogEvent::ConnectFailed, "socket()");
             return false;
         }
 
@@ -157,7 +162,8 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
 
         if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
             close(sock);
-            log(share_log::LogLevel::Error, share_log::LogEvent::ConnectFailed, "connect()");
+            log(share_log::LogLevel::Error, 
+                share_log::LogEvent::ConnectFailed, "connect()");
             return false;
         }
 
@@ -255,7 +261,8 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
                 Botan::PK_Verifier verifier(*rem_dili_key, "Pure");
                 verifier.update(reinterpret_cast<const uint8_t*>(rem_kyber_buf.data()), rem_kyber_len);
             if (!verifier.check_signature(rem_sig)) {
-                    log(share_log::LogLevel::Security, share_log::LogEvent::MitmDetected, rem_user + "@" + rem_addr);
+                    log(share_log::LogLevel::Security, 
+                        share_log::LogEvent::MitmDetected, rem_user + "@" + rem_addr);
                     close(sock);
                     return false;
                 }
@@ -292,7 +299,8 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
         close(sock);
         return confirm == 'Y';
     } catch (...) {
-        log(share_log::LogLevel::Error, share_log::LogEvent::ExchangeKeysFailed, rem_addr);
+        log(share_log::LogLevel::Error, 
+            share_log::LogEvent::ExchangeKeysFailed, rem_addr);
         return false;
     }
 }
@@ -300,10 +308,11 @@ bool ShareManager::exchKeys(const std::string& rem_addr,
 // *****************************************
 // ENVIAR (Cliente)
 
-bool ShareManager::sendFile(const std::string& path,
-                            const std::string& rem_addr,
-                            int rem_port,
-                            const std::vector<uint8_t>& key) {
+bool ShareManager::sendFile(
+ const std::string& path,
+ const std::string& rem_addr,
+   int rem_port,
+ const std::vector<uint8_t>& key) {
     try {
         int sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock < 0) return false;
@@ -383,11 +392,13 @@ bool ShareManager::sendFiles(
     std::vector<uint8_t> sess_key;
 
     if (!exchKeys(rem_addr, rem_port, rem_user, rem_kyber_key, rem_dili_key, rem_fprint, sess_key)) {
-        log(share_log::LogLevel::Error, share_log::LogEvent::SendFailed, rem_addr);
+        log(share_log::LogLevel::Error, 
+            share_log::LogEvent::SendFailed, rem_addr);
         return false;
     }
 
-    log(share_log::LogLevel::Info, share_log::LogEvent::SendingFiles, std::to_string(file_paths.size()));
+    log(share_log::LogLevel::Info, 
+        share_log::LogEvent::SendingFiles, std::to_string(file_paths.size()));
 
     size_t sent = 0;
     for (size_t i = 0; i < file_paths.size(); i++) {
@@ -457,9 +468,10 @@ ShareManager::~ShareManager() {
     SecUtil::secure_clear(id_priv_raw);
 }
 
-void ShareManager::setIdentity(const std::vector<uint8_t>& pub_key,
-                               const std::vector<uint8_t>& priv_key,
-                               const std::string& fp) {
+void ShareManager::setIdentity(
+const std::vector<uint8_t>& pub_key,
+const std::vector<uint8_t>& priv_key,
+const std::string& fp) {
     id_pub_key = pub_key;
     id_priv_raw = Botan::secure_vector<uint8_t>(priv_key.begin(), priv_key.end());
     id_fprint = fp;
@@ -474,7 +486,8 @@ void ShareManager::setIdentity(const std::vector<uint8_t>& pub_key,
             dili_priv_key = Botan::PKCS8::load_key(src_priv);
         }
     } catch (...) {
-        log(share_log::LogLevel::Error, share_log::LogEvent::IdentityLoadError, "");
+        log(share_log::LogLevel::Error, 
+            share_log::LogEvent::IdentityLoadError, "");
     }
 }
 
@@ -507,7 +520,8 @@ bool ShareManager::isTrusted(const std::string& fprint) const {
 
 bool ShareManager::startReceiving() {
     if (!kyber_priv_key && !genKyber()) {
-        log(share_log::LogLevel::Error, share_log::LogEvent::KyberGenFailed, "");
+        log(share_log::LogLevel::Error, 
+            share_log::LogEvent::KyberGenFailed, "");
         return false;
     }
 
@@ -520,16 +534,19 @@ bool ShareManager::startReceiving() {
     }
 
     if (!kem_srv_run) {
-        log(share_log::LogLevel::Error, share_log::LogEvent::ServerStartFailed, "");
+        log(share_log::LogLevel::Error, 
+            share_log::LogEvent::ServerStartFailed, "");
         stopSrvs();
         return false;
     }
 
-    log(share_log::LogLevel::Success, share_log::LogEvent::ServerStarted, "");
+    log(share_log::LogLevel::Success, 
+        share_log::LogEvent::ServerStarted, "");
     return true;
 }
 
 void ShareManager::stopReceiving() {
     stopSrvs();
-    log(share_log::LogLevel::Info, share_log::LogEvent::ServerStopped, "");
+    log(share_log::LogLevel::Info, 
+        share_log::LogEvent::ServerStopped, "");
 }
