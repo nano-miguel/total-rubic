@@ -40,7 +40,10 @@ void ShareManager::startKemSrv() {
         tv.tv_sec = 1;
         tv.tv_usec = 0;
 
-        if (select(kem_sock + 1, &fds, nullptr, nullptr, &tv) <= 0)
+        if (select(
+        kem_sock + 1, &fds, 
+            nullptr, 
+            nullptr, &tv) <= 0)
             continue;
 
         struct sockaddr_in cli_addr;
@@ -69,7 +72,9 @@ void ShareManager::startKemSrv() {
     close(kem_sock);
 }
 
-void ShareManager::handleKemConn(int cli_sock, const std::string& cli_ip) {
+void ShareManager::handleKemConn(
+int cli_sock, 
+const std::string& cli_ip) {
     try {
         setSockTimeout(cli_sock, SOCK_TIMEOUT);
 
@@ -152,12 +157,13 @@ void ShareManager::handleKemConn(int cli_sock, const std::string& cli_ip) {
             std::vector<uint8_t> rem_sig(rem_sig_len);
             safeRecv(cli_sock, rem_sig.data(), rem_sig_len);
 
-            if (rem_dili_key) {
-                Botan::PK_Verifier verifier(*rem_dili_key, "Pure");
-                verifier.update(reinterpret_cast<const uint8_t*>(rem_kyber_buf.data()), rem_kyber_len);
-                if (!verifier.check_signature(rem_sig)) {
-                    log(share_log::LogLevel::Security, share_log::LogEvent::MitmDetected, rem_user + "@" + cli_ip);
-                    close(cli_sock);
+        if (rem_dili_key) {
+            Botan::PK_Verifier verifier(*rem_dili_key, "Pure");
+            verifier.update(reinterpret_cast<const uint8_t*>(rem_kyber_buf.data()), rem_kyber_len);
+            if (!verifier.check_signature(rem_sig)) {
+                log(share_log::LogLevel::Security, 
+                    share_log::LogEvent::MitmDetected, rem_user + "@" + cli_ip);
+                close(cli_sock);
                     return;
                 }
             }
