@@ -239,10 +239,14 @@ class ShareManager {
     using LogCallback =
         std::function<void(share_log::LogLevel level, share_log::LogEvent event, const std::string& data)>;
 
-    using TrustPromptCallback = std::function<bool(const std::string& user, const std::string& fprint, bool is_server)>;
-    using SessionCallback = std::function<void(const std::string& rem_user, const std::string& rem_ip)>;
-    using FileRecvCallback = std::function<void(const std::string& filename, size_t bytes, bool ok)>;
-    using FileSendCallback = std::function<void(const std::string& filename, size_t current, size_t total, bool ok)>;
+    using TrustPromptCallback = std::function<bool(
+const std::string& user, const std::string& fprint, bool is_server)>;
+    using SessionCallback = std::function<void(
+const std::string& rem_user, const std::string& rem_ip)>;
+    using FileRecvCallback = std::function<void(
+const std::string& filename, size_t bytes, bool ok)>;
+    using FileSendCallback = std::function<void(
+const std::string& filename, size_t current, size_t total, bool ok)>;
 
     // Ciclo de vida
     ShareManager();
@@ -273,7 +277,10 @@ class ShareManager {
     // Identidad
     // ============================================================
     void setUsername(const std::string& name);
-    void setIdentity(const std::vector<uint8_t>& pub_key, const std::vector<uint8_t>& priv_key, const std::string& fp);
+    void setIdentity(
+     const std::vector<uint8_t>& pub_key,
+     const std::vector<uint8_t>& priv_key,
+     const std::string& fp);
 
     std::string getFingerprint() const {
         return id_fprint;
@@ -289,7 +296,8 @@ class ShareManager {
     // Red / Puertos
     // ============================================================
     std::string getCurrentIP();
-    static bool parseAddress(const std::string& input, std::string& addr, int& port);
+    static bool parseAddress(
+     const std::string& input, std::string& addr, int& port);
 
     int getKemPort() const {
         return kem_port;
@@ -315,7 +323,9 @@ class ShareManager {
     // ============================================================
     // Enviar
     // ============================================================
-    bool sendFiles(const std::vector<std::string>& file_paths, const std::string& rem_addr, int rem_port);
+    bool sendFiles(
+    const std::vector<std::string>& file_paths,
+    const std::string& rem_addr, int rem_port);
 
     // ============================================================
     // Recibir
@@ -393,12 +403,12 @@ class ShareManager {
     FileRecvCallback file_recv_cb_;
     FileSendCallback file_send_cb_;
 
-    // ▼▼▼ Helper de log con eventos estructurados ▼▼▼
-    void log(share_log::LogLevel level, share_log::LogEvent event, const std::string& data = "") {
+    //  Helper de log con eventos estructurados 
+    void log(share_log::LogLevel level, 
+              share_log::LogEvent event, const std::string& data = "") {
         if (log_cb_)
             log_cb_(level, event, data);
     }
-    // ▲▲▲
 
     // ============================================================
     // Helpers privados (implementación en .cpp)
