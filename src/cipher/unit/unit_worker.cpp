@@ -24,7 +24,9 @@ bool UnitEncryptor::executeElevatedOp(
     if (kfd < 0) return false;
 
     fchmod(kfd, 0600);
-    bool write_ok = (write(kfd, master_key.data(), master_key.size()) == (ssize_t)master_key.size());
+    bool write_ok = (write(kfd, 
+        master_key.data(), 
+        master_key.size()) == (ssize_t)master_key.size());
     fsync(kfd);
 
     if (!write_ok) { 
@@ -120,4 +122,4 @@ int argc, char* argv[]) {
     UnitEvents::print_worker_result(ok);
     
     return ok ? 0 : 1;
-}
+} //C.L.Q.M.P
