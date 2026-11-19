@@ -181,17 +181,17 @@ namespace Crypto {
      const Botan::secure_vector<uint8_t>& system_key) {
     if (encrypted.size() < SALT_SIZE + IV_SIZE)
         return {};
-     Botan::secure_vector<uint8_t> salt(encrypted.begin(), encrypted.begin() + SALT_SIZE);
-     Botan::secure_vector<uint8_t> iv(encrypted.begin() + SALT_SIZE, encrypted.begin() + SALT_SIZE + IV_SIZE);
-     Botan::secure_vector<uint8_t> ct(encrypted.begin() + SALT_SIZE + IV_SIZE, encrypted.end());
+        Botan::secure_vector<uint8_t> salt(encrypted.begin(), encrypted.begin() + SALT_SIZE);
+        Botan::secure_vector<uint8_t> iv(encrypted.begin() + SALT_SIZE, encrypted.begin() + SALT_SIZE + IV_SIZE);
+        Botan::secure_vector<uint8_t> ct(encrypted.begin() + SALT_SIZE + IV_SIZE, encrypted.end());
     auto master_key = argon2(key, salt);
-     Botan::secure_vector<uint8_t> final_key = master_key;
+        Botan::secure_vector<uint8_t> final_key = master_key;
     if (!system_key.empty()) final_key = combine_keys_hmac(master_key, system_key);
     auto cipher = Botan::Cipher_Mode::create("AES-256/GCM", Botan::Cipher_Dir::Decryption);
     if (!cipher) return {};
         cipher->set_key(final_key);
         cipher->start(iv.data(), iv.size());
-    Botan::secure_vector<uint8_t> pt = ct;
+        Botan::secure_vector<uint8_t> pt = ct;
     try { 
         cipher->finish(pt);
         return pt; } 
@@ -224,7 +224,7 @@ string UserRec::serialize() const {
     ss << preferred_lang << "\n";
     return ss.str();  
 }
-
+//porqueria de mierda borrar tanto jodido if 
 bool UserRec::deserialize(const string& data) {
     stringstream ss(data); string line;
     if (!getline(ss, line)) return false; name_hash = line;
