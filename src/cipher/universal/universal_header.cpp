@@ -18,8 +18,10 @@ void HeaderKMAC::set_key(
         kdf->derive_key(
             std::span<uint8_t>(derived_key.data(), derived_key.size()),
             std::span<const uint8_t>(master_key.data(), master_key.size()),
-            std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(salt_str.data()), salt_str.size()),
-            std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(info_str.data()), info_str.size()));
+            std::span<const uint8_t>(
+                 reinterpret_cast<const uint8_t*>(salt_str.data()), salt_str.size()),
+            std::span<const uint8_t>(
+                 reinterpret_cast<const uint8_t*>(info_str.data()), info_str.size()));
 
         mac_key = derived_key;
     } 
