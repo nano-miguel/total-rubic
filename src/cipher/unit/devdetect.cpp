@@ -67,9 +67,9 @@ bool DevDetect::checkUSB(
     /* Verificar el controlador del usb*/
     char buf[256];
     ssize_t len = readlink(syspath.c_str(), buf, sizeof(buf) - 1);
-        if (len != -1) {
-            buf[len] = '\0';
-        if (std::string_view(buf).find("usb") != std::string_view::npos) {
+     
+     if (len != -1) { buf[len] = '\0';
+     if (std::string_view(buf).find("usb") != std::string_view::npos) {
         return true;
         }
     }
