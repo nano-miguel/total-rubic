@@ -12,12 +12,16 @@
 // ******************************************
 // HELPERS DE CONVERSIÓN
 
-std::vector<uint8_t> ShareManager::toVec(const Botan::secure_vector<uint8_t>& sec) {
-    return std::vector<uint8_t>(sec.begin(), sec.end());
+std::vector<uint8_t> ShareManager::toVec(
+const Botan::secure_vector<uint8_t>& sec) {
+    return std::vector<uint8_t>(
+        sec.begin(), sec.end());
 }
 
-Botan::secure_vector<uint8_t> ShareManager::toSec(const std::vector<uint8_t>& vec) {
-    return Botan::secure_vector<uint8_t>(vec.begin(), vec.end());
+Botan::secure_vector<uint8_t> ShareManager::toSec(
+const std::vector<uint8_t>& vec) {
+    return Botan::secure_vector<uint8_t>(
+        vec.begin(), vec.end());
 }
 
 // ******************************************
@@ -27,9 +31,9 @@ bool ShareManager::safeSend(int sock, const void* buf, size_t len) {
     const char* ptr = static_cast<const char*>(buf);
     size_t total = 0;
     while (total < len) {
-        ssize_t sent = send(sock, ptr + total, len - total, MSG_NOSIGNAL);
-        if (sent <= 0)
-            return false;
+    ssize_t sent = send(sock, ptr + total, len - total, MSG_NOSIGNAL);
+if (sent <= 0)
+        return false;
         total += sent;
     }
     return true;
@@ -40,8 +44,8 @@ bool ShareManager::safeRecv(int sock, void* buf, size_t len) {
     size_t total = 0;
     while (total < len) {
         ssize_t recvd = recv(sock, ptr + total, len - total, 0);
-        if (recvd <= 0)
-            return false;
+if (recvd <= 0)
+        return false;
         total += recvd;
     }
     return true;
@@ -106,8 +110,8 @@ std::vector<std::string> ShareManager::expandFiles(const std::string& path) {
         files.push_back(path);
     } else if (std::filesystem::is_directory(path)) {
         try {
-            for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
-                if (std::filesystem::is_regular_file(entry.path())) {
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
+    if (std::filesystem::is_regular_file(entry.path())) {
                     files.push_back(entry.path().string());
                 }
             }
@@ -127,12 +131,12 @@ std::string ShareManager::getCurrentIP() {
 
     if (getifaddrs(&ifaddr) == 0) {
         for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
-            if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET) {
-                getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST);
-                std::string ifname = ifa->ifa_name;
-                std::string ipaddr = host;
-                if (ipaddr != "127.0.0.1" && ifname.find("lo") == std::string::npos) {
-                    ip = ipaddr;
+    if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET) {
+        getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST);
+           std::string ifname = ifa->ifa_name;
+           std::string ipaddr = host;
+    if (ipaddr != "127.0.0.1" && ifname.find("lo") == std::string::npos) {
+            ip = ipaddr;
                     break;
                 }
             }
@@ -167,11 +171,11 @@ void ShareManager::setUsername(const std::string& name) {
     if (xdg_config && xdg_config[0] != '\0') {
         config_base = std::string(xdg_config);
     } else {
-        const char* home = getenv("HOME");
-        if (home && home[0] != '\0') {
-            config_base = std::string(home) + "/.config";
-        } else {
-            throw std::runtime_error("err_no_safe_config_dir");
+    const char* home = getenv("HOME");
+    if (home && home[0] != '\0') {
+        config_base = std::string(home) + "/.config";
+    } else {
+    throw std::runtime_error("err_no_safe_config_dir");
         }
     }
 
