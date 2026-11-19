@@ -301,12 +301,13 @@ private:
         if (!safe_pwrite(ctx_.fd, it->data->data(), it->size, it->offset)) {
             ctx_.log(LogLevel::Error, LogEvent::ChunkWriteError, std::to_string(it->index));err = true;
         break;}
-                        done++; bytes_done += it->size;
-                        ctx_.speed_meter.addBytes(it->size);
-                        ctx_.progress(bytes_done.load(), ctx_.total_size, ctx_.speed_meter.getCurrentSpeed());
-                        expected++;
-                        it = reorder.erase(it);
-                        processed_any = true;
+            done++; bytes_done += it->size;
+            ctx_.speed_meter.addBytes(it->size);
+            ctx_.progress(bytes_done.load(), 
+                ctx_.total_size, 
+                ctx_.speed_meter.getCurrentSpeed());expected++;
+                it = reorder.erase(it);
+                processed_any = true;
                     } else {
                         ++it;
                     }
