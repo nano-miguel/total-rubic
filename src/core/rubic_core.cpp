@@ -205,10 +205,11 @@ UserMgr::RegisterResult UserMgr::createAccount(
          rec.name_hash = user_hash; 
          rec.salt = Crypto::rand_bytes(SALT_SIZE);
          rec.pwd_hash = Crypto::argon2(pass, rec.salt);
-        Botan::secure_vector<uint8_t> name_vec(user.begin(), user.end()); 
+    Botan::secure_vector<uint8_t> name_vec(user.begin(), user.end()); 
          rec.enc_name = Crypto::aes_gcm_enc(name_vec, pass);
          rec.created = time(nullptr); 
          rec.last_login = time(nullptr);DiliID temp_id;
+    
     if (temp_id.generate()) {
          rec.id_pub_key = temp_id.getPubKey();
          rec.id_priv_key = temp_id.getPrivKeyEncoded();
@@ -222,7 +223,10 @@ UserMgr::RegisterResult UserMgr::createAccount(
         result.error = "err_save_failed"; secure_c_container(mast_pwd); 
         return result; }
     auto users = load_idx();
-        users.push_back(user_hash); save_idx(users);cur_user = user; cur_user_hash = user_hash; auth = true; init_modules();
+        users.push_back(user_hash); save_idx(users);
+    cur_user = user; 
+    cur_user_hash = user_hash; 
+    auth = true; init_modules();
         result.preferred_lang = rec.preferred_lang; 
         result.ok = true; 
         return result;
