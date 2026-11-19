@@ -213,11 +213,11 @@ bool UnitEncryptor::doProcess(
     bool encrypt) {
     ThCfg cfg = settings_.resolveConfig(unit.device_type);
 
-    log(LogLevel::Info, LogEvent::DeviceTypeDetected, unit.getDevTypeStr());
-    log(LogLevel::Info, settings_.isCustomMode() ? LogEvent::ConfigCustom : LogEvent::ConfigAuto,
-        std::to_string(cfg.num_threads) + " threads");
-    log(LogLevel::Info, LogEvent::ChunkSizeInfo, std::to_string(cfg.chunk_size_mb));
-    log(LogLevel::Info, LogEvent::IoModeInfo, cfg.use_direct_io ? "direct" : "normal");
+         log(LogLevel::Info, LogEvent::DeviceTypeDetected, unit.getDevTypeStr());
+         log(LogLevel::Info, settings_.isCustomMode() ? LogEvent::ConfigCustom : LogEvent::ConfigAuto,
+          std::to_string(cfg.num_threads) + " threads");
+         log(LogLevel::Info, LogEvent::ChunkSizeInfo, std::to_string(cfg.chunk_size_mb));
+         log(LogLevel::Info, LogEvent::IoModeInfo, cfg.use_direct_io ? "direct" : "normal");
 
     uint64_t total_size = 0;
     int fd = open_device_with_retry(unit.device_path, cfg, total_size);
