@@ -25,7 +25,6 @@
 #include <cstdint>
 #include <fcntl.h>
 #include <unistd.h>
-
 #include <botan/auto_rng.h>
 #include <botan/cipher_mode.h>
 #include <botan/block_cipher.h>
@@ -34,13 +33,11 @@
 #include <botan/secmem.h>
 #include <botan/kdf.h>
 #include <botan/hash.h>
-
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <errno.h>
 #include <stdlib.h>
-
 #include "../hardware_detect.h"
 #include "unit/config/unit_settings.h"
 
@@ -58,6 +55,7 @@ inline void secure_wipe(void* ptr, size_t len) {
 #endif
 
 namespace rubic_unit {
+
 inline constexpr uint64_t SECTOR_SIZE           = 512ULL;
 inline constexpr uint64_t HEADER_OFFSET_SECTORS = 2048ULL;
 inline constexpr uint64_t HEADER_SECTORS        = 8ULL;
@@ -69,21 +67,24 @@ inline constexpr int PROGRESS_UPDATE_MS         = 200;
 
 inline constexpr uint64_t GB = 1024ULL * 1024ULL * 1024ULL;
 inline constexpr uint64_t MB = 1024ULL * 1024ULL;
-
 inline constexpr uint64_t ALIGNMENT             = 4096ULL;
+
 inline constexpr size_t   KMAC_SIZE             = 64;
 inline constexpr size_t   KDF_SALT_SIZE         = 64;
 inline constexpr const char* KEY_DERIVATION_INFO = "RUBI-C-AES-XTS-KEY-V1-OFFSET-1MB";
+
 inline constexpr int      PIPELINE_DEPTH        = 3;
 inline constexpr size_t   MAX_QUEUE_SIZE        = 2;
 
-inline constexpr uint32_t HEADER_VERSION_CURRENT = 4;
-inline constexpr uint32_t HEADER_VERSION_V3      = 3;
+// ============================================================
+// VERSION DEL HEADER: Solo existe la version 1.
+// No hay compatibilidad hacia atras. No hay versiones legacy.
+// ============================================================
+inline constexpr uint32_t HEADER_VERSION_CURRENT = 1;
 
 // ============================================
 // Helpers de I/O Segura + RAII para O_DIRECT
 // ============================================
-
 class DirectIOGuard {
     int  fd_;
     int  saved_;
@@ -178,7 +179,7 @@ enum class LogEvent {
     FormatStart, FormatOk, FormatFailed,
     XtsFallback,
     Sector0BackedUp, Sector0Wiped, Sector0Restored,
-    RequiresRoot, LegacyHeaderNoKdf, InvalidHeaderRegion, Sector0WipeFailed,
+    RequiresRoot, InvalidHeaderRegion, Sector0WipeFailed,
     Sector0RestoreFailed, HeaderCleanFsyncFailed, HeaderCleanWriteFailed,
     FinalFsyncFailed, ProcessingFsyncFailed, ReorderOverflow, Sector0ReadFailed,
     KmacSizeError, HeaderBackupAttempting,
@@ -197,23 +198,23 @@ public:
 
 class DevDetect {
 private:
-    static std::string getSysPath(const std::string& device);
-    static std::string readSpeed(const std::string& syspath);
-    static bool checkUSB(const std::string& syspath);
-    static bool checkNVMe(const std::string& device);
-    static bool checkSD(const std::string& device);
-    static bool isRemovable(const std::string& syspath);
+    static std::string getSysPath(const std::string & device);
+    static std::string readSpeed(const std::string & syspath);
+    static bool checkUSB(const std::string & syspath);
+    static bool checkNVMe(const std::string & device);
+    static bool checkSD(const std::string & device);
+    static bool isRemovable(const std::string & syspath);
 public:
-    static DevType detect(const std::string& device);
+    static DevType detect(const std::string & device);
     static std::string devTypeToStr(DevType type) {
         switch(type) {
-            case DevType::USB2:     return "USB 2.0";
-            case DevType::USB3:     return "USB 3.0";
-            case DevType::NVME:     return "NVMe SSD";
-            case DevType::SSD_SATA: return "SSD SATA";
-            case DevType::HDD:      return "HDD";
-            case DevType::SD_CARD:  return "Tarjeta SD";
-            default:                return "Desconocido";
+            case DevType::USB2:     return  "USB 2.0 ";
+            case DevType::USB3:     return  "USB 3.0 ";
+            case DevType::NVME:     return  "NVMe SSD ";
+            case DevType::SSD_SATA: return  "SSD SATA ";
+            case DevType::HDD:      return  "HDD ";
+            case DevType::SD_CARD:  return  "Tarjeta SD ";
+            default:                return  "Desconocido ";
         }
     }
 };
@@ -274,7 +275,7 @@ struct EncUnitHdr {
     uint8_t orig_sector0[512];
 
     bool isValid() const {
-        if (version < 2 || version > HEADER_VERSION_CURRENT) return false;
+        if (version != HEADER_VERSION_CURRENT) return false;
         if (data_start_sector < HEADER_OFFSET_SECTORS + HEADER_SECTORS) return false;
         if (data_start_sector > total_sectors) return false;
         bool all_zero = true;
@@ -295,24 +296,23 @@ inline bool read_enc_header(int fd, EncUnitHdr& out) {
 
 class HdrBackup {
 private:
-    std::string getBackupPath(const std::string& device_path);
-    Botan::secure_vector<uint8_t> encryptBackup(
-    const EncUnitHdr& header,
-    const Botan::secure_vector<uint8_t>& key);
+    std::string getBackupPath(const std::string & device_path);
+    Botan::secure_vector <uint8_t > encryptBackup(
+        const EncUnitHdr & header,
+        const Botan::secure_vector <uint8_t > & key);
     bool decryptBackup(
-    const std::string& backup_path,EncUnitHdr& header,
-    const Botan::secure_vector<uint8_t>& key);
-    Botan::secure_vector<uint8_t> deriveBackupKey(
-    const std::string& device_path,const Botan::secure_vector<uint8_t>& master_key);
+        const std::string & backup_path,EncUnitHdr & header,
+        const Botan::secure_vector <uint8_t > & key);
+    Botan::secure_vector <uint8_t > deriveBackupKey(
+        const std::string & device_path,const Botan::secure_vector <uint8_t > & master_key);
 public:
-    bool saveHeader(const std::string& device_path,
-    const EncUnitHdr& header,
-    const Botan::secure_vector<uint8_t>& master_key);
-    bool loadHeader(
-    const std::string& device_path,EncUnitHdr& header,
-    const Botan::secure_vector<uint8_t>& master_key);
-    bool backupExists(const std::string& device_path);
-    bool removeBackup(const std::string& device_path);
+    bool saveHeader(const std::string & device_path,
+        const EncUnitHdr & header,
+        const Botan::secure_vector <uint8_t > & master_key);
+    bool loadHeader(const std::string & device_path,EncUnitHdr & header,
+        const Botan::secure_vector <uint8_t > & master_key);
+    bool backupExists(const std::string & device_path);
+    bool removeBackup(const std::string & device_path);
 };
 
 struct StorUnit {
@@ -350,7 +350,6 @@ private:
     std::unique_ptr<AlignBuf> aligned_cache;
     bool use_aligned;
     bool scrub_on_destroy_ = false;
-
 public:
     SecBuf(size_t size, bool aligned_mode = false) : use_aligned(aligned_mode) {
         if (use_aligned)
@@ -358,7 +357,6 @@ public:
         else
             buffer_data.resize(size);
     }
-
     void set_scrub_on_destroy(bool v) { scrub_on_destroy_ = v; }
     uint8_t* data() { return use_aligned ? aligned_cache->data() : buffer_data.data(); }
     const uint8_t* data() const { return use_aligned ? aligned_cache->data() : buffer_data.data(); }
@@ -380,15 +378,12 @@ private:
     static constexpr size_t kBlocksPerSector = static_cast<size_t>(SECTOR_SIZE) / 16;
     static constexpr size_t kBatchSectors    = 8;
     static constexpr size_t kTweakBytes      = kBatchSectors * kBlocksPerSector * 16;
-
     Botan::secure_vector<uint8_t> k1_;
     Botan::secure_vector<uint8_t> k2_;
-    
     std::unique_ptr<Botan::BlockCipher> aes_k1_;
     std::unique_ptr<Botan::BlockCipher> aes_k2_;
     std::unique_ptr<Botan::Cipher_Mode> botan_xts_;
     bool encrypt_mode_;
-
 public:
     AESXTSProc(const Botan::secure_vector<uint8_t>& key_data, bool encrypt);
     bool processBuffer(uint8_t* data, size_t size, uint64_t start_sector);
@@ -426,7 +421,6 @@ private:
     std::condition_variable not_empty;
     size_t max_size;
     bool closed = false;
-    
 public:
     LimQueue(size_t max) : max_size(max) {}
     void push(T&& item) {
@@ -454,7 +448,7 @@ public:
 };
 
 // ============================================================
-// Declaraciones del Pipeline (Implementación en unit_pipeline.cpp)
+// Declaraciones del Pipeline (Implementacion en unit_pipeline.cpp)
 // ============================================================
 namespace unit_pipeline {
 
@@ -474,18 +468,18 @@ struct ProcessContext {
 
 bool runDataPipeline(const ProcessContext& ctx);
 
-bool HeaderProcesEncrypt(
-    int fd, 
-    const StorUnit& unit, 
+bool HeaderProcessEncrypt(
+    int fd,
+    const StorUnit& unit,
     const Botan::secure_vector<uint8_t>& master_key,
     uint64_t data_start_sector, uint64_t total_sectors, HdrBackup& backup_mgr,
     Botan::secure_vector<uint8_t>& xts_key, FSInfo& fs_info,
     std::function<void(LogLevel, LogEvent, const std::string&)> log);
 
-bool HeaderProcessoDecrypt(
-    int fd, 
-    const StorUnit& unit, 
-    const Botan::secure_vector<uint8_t>& master_key,HdrBackup& backup_mgr,
+bool HeaderProcessDecrypt(
+    int fd,
+    const StorUnit& unit,
+    const Botan::secure_vector<uint8_t>& master_key, HdrBackup& backup_mgr,
     Botan::secure_vector<uint8_t>& xts_key,
     uint64_t& data_start_sector, FSInfo& fs_info,
     std::function<void(LogLevel, LogEvent, const std::string&)> log);
@@ -511,17 +505,13 @@ private:
     std::string currentKeyName;
     Botan::secure_vector<uint8_t> directKey;
     bool useDirectKey = false;
-
     UnitSettings settings_;
-
     std::atomic<bool> stop_requested{false};
     std::atomic<bool> processing_active{false};
     SpeedMtr speed_meter;
-
     HdrBackup backup_mgr;
     std::vector<StorUnit> cached_units;
     time_t last_refresh;
-
     LogCallback log_cb_;
     ProgressCallback progress_cb_;
     Stats stats;
@@ -533,7 +523,7 @@ private:
         if (progress_cb_) progress_cb_(cur, total, speed);
     }
 
-    // --- Funciones de Gestión de Lectura (Implementadas en read/read-unit.cpp) ---
+    // --- Funciones de Gestion de Lectura (Implementadas en read/read-unit.cpp) ---
     void refreshUnits();
     bool isPhysicalDevice(const std::string& path);
     std::string getParentDevice(const std::string& path);
@@ -542,7 +532,7 @@ private:
     void gather_device_data(StorUnit& u);
     FSInfo getFSInfo(const std::string& path);
     std::vector<StorUnit> detectUnits();
-    
+
     // --- Funciones de Cabecera (Implementadas en unit_header.cpp) ---
     bool isUnitEncrypt(const std::string& device_path);
     bool readHdr(int fd, EncUnitHdr& hdr);
@@ -555,28 +545,25 @@ private:
 
 public:
     UnitEncryptor();
+
     void setLogCallback(LogCallback cb) { log_cb_ = std::move(cb); }
     void setProgressCallback(ProgressCallback cb) { progress_cb_ = std::move(cb); }
     void setKeyManager(KeyManager* km) { keyManager = km; useDirectKey = false; }
     void setDirectKey(const Botan::secure_vector<uint8_t>& key) {
         directKey = key; useDirectKey = true; keyManager = nullptr;
     }
-    
     bool setDirectKeyHex(const std::string& hexKey, std::string& error_out);
-    
     bool hasKey() const;
     std::vector<StorUnit> getUnits();
     void refresh();
-
     UnitSettings& getSettings() { return settings_; }
     const UnitSettings& getSettings() const { return settings_; }
-
     void reloadCustomConfig();
     bool processUnit(StorUnit& unit, bool encrypt, const Botan::secure_vector<uint8_t>& master_key);
     bool doProcess(const StorUnit& unit, const Botan::secure_vector<uint8_t>& master_key, bool encrypt);
     void stop() { if (processing_active) stop_requested = true; }
 
-    // --- Funciones Públicas de Cabecera (Para la UI) ---
+    // --- Funciones Publicas de Cabecera (Para la UI) ---
     bool cleanHeader(const StorUnit& unit);
     bool restoreHeader(const StorUnit& unit, const Botan::secure_vector<uint8_t>& master_key);
     bool hasHeaderBackup(const std::string& device_path) { return backup_mgr.backupExists(device_path); }
